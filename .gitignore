@@ -1,0 +1,46 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+
+# Build outputs
+build/
+**/build/
+
+# Android
+android/.gradle/
+android/local.properties
+android/app/build/
+android/app/.cxx/
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+ios/Runner/GeneratedPluginRegistrant.*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Signing
+*.jks
+*.keystore
+
+# Firebase generated/service files — review before committing
+google-services.json
+GoogleService-Info.plist
+
+*.apk
+*.aab

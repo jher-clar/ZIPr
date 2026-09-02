@@ -1,0 +1,49 @@
+name: zipr
+description: "ZIPr - Mixed Media Compressor, Encrypted Container & PDF-like Viewer"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Media Picking & Compression
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.3.0
+  video_compress: ^3.1.2
+
+  # Archive, Encryption & File Management
+  archive: ^4.2.0
+  crypto: ^3.0.3
+  encrypt: ^5.0.3
+  path_provider: ^2.1.4
+  permission_handler: ^13.0.1
+  share_plus: ^13.3.0
+  file_picker: ^12.1.1
+  path: ^1.9.0
+
+  # Video Playback & Controls
+  video_player: ^2.9.1
+  chewie: ^1.8.5
+
+  # UI & Utilities
+  http: ^1.2.2
+  shared_preferences: ^2.5.4
+  google_fonts: ^8.2.1
+  flutter_svg: ^2.0.17
+  intl: ^0.20.3
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
