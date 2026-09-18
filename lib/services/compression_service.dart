@@ -53,13 +53,14 @@ class CompressionService {
       );
 
       final maxDim = cfg.photoMaxDimension.maxPixels;
+      final effectiveDim = maxDim > 0 ? maxDim : 2560;
 
       final compressedXFile = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
         targetPath,
         quality: effectiveQuality.clamp(1, 100),
-        minWidth: maxDim > 0 ? maxDim : 0,
-        minHeight: maxDim > 0 ? maxDim : 0,
+        minWidth: effectiveDim,
+        minHeight: effectiveDim,
         keepExif: cfg.keepExif,
         format: compressFormat,
       );
@@ -153,11 +154,21 @@ class CompressionService {
           return File(xFile.path);
         }
       } else {
-        final thumbFile = await VideoCompress.getFileThumbnail(
-          file.path,
-          quality: 50,
-          position: -1,
-        );
+        File? thumbFile;
+        try {
+          thumbFile = await VideoCompress.getFileThumbnail(
+            file.path,
+            quality: 50,
+            position: 0,
+          );
+        } catch (_) {
+          // Fallback retry with default position
+          thumbFile = await VideoCompress.getFileThumbnail(
+            file.path,
+            quality: 50,
+            position: -1,
+          );
+        }
         return thumbFile;
       }
     } catch (e) {

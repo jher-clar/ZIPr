@@ -287,40 +287,54 @@ class _ZIPrFeedViewerScreenState extends State<ZIPrFeedViewerScreen> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Colors.white),
-                        onPressed: _currentPageIndex > 0 ? () => _scrollToPage(_currentPageIndex - 1) : null,
-                      ),
-                      Expanded(
-                        child: SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            activeTrackColor: const Color(0xFF38BDF8),
-                            inactiveTrackColor: const Color(0xFF1E293B),
-                            thumbColor: const Color(0xFF38BDF8),
-                            trackHeight: 3,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                          ),
-                          child: Slider(
-                            value: _currentPageIndex.toDouble(),
-                            min: 0.0,
-                            max: (_items.length - 1).toDouble().clamp(0.0, 1000.0),
-                            divisions: _items.length > 1 ? _items.length - 1 : 1,
-                            onChanged: (val) {
-                              _scrollToPage(val.toInt());
-                            },
+                  child: _items.length > 1
+                      ? Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Colors.white),
+                              onPressed: _currentPageIndex > 0 ? () => _scrollToPage(_currentPageIndex - 1) : null,
+                            ),
+                            Expanded(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  activeTrackColor: const Color(0xFF38BDF8),
+                                  inactiveTrackColor: const Color(0xFF1E293B),
+                                  thumbColor: const Color(0xFF38BDF8),
+                                  trackHeight: 3,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                ),
+                                child: Slider(
+                                  value: _currentPageIndex.toDouble().clamp(0.0, (_items.length - 1).toDouble()),
+                                  min: 0.0,
+                                  max: (_items.length - 1).toDouble(),
+                                  divisions: _items.length - 1,
+                                  onChanged: (val) {
+                                    _scrollToPage(val.toInt());
+                                  },
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.white),
+                              onPressed: _currentPageIndex < _items.length - 1
+                                  ? () => _scrollToPage(_currentPageIndex + 1)
+                                  : null,
+                            ),
+                          ],
+                        )
+                      : const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              'Single Page Container • 1 of 1',
+                              style: TextStyle(
+                                color: Color(0xFF38BDF8),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.white),
-                        onPressed: _currentPageIndex < _items.length - 1
-                            ? () => _scrollToPage(_currentPageIndex + 1)
-                            : null,
-                      ),
-                    ],
-                  ),
                 ),
               ),
           ],

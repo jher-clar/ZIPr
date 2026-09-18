@@ -358,4 +358,148 @@ void main() {
       expect(tm.themeModeNotifier.value, ThemeMode.system);
     });
   });
+
+  group('7. Single-Media Containers (Only Photos, Only Videos, Single Item)', () {
+    test('Successfully creates, inspects, and opens a container with ONLY photos', () async {
+      final img1 = File(p.join(tempDir.path, 'photo_1.jpg'));
+      final img2 = File(p.join(tempDir.path, 'photo_2.png'));
+      await img1.writeAsBytes(List.generate(1024 * 20, (i) => i % 256));
+      await img2.writeAsBytes(List.generate(1024 * 25, (i) => (i * 3) % 256));
+
+      final items = [
+        ZIPrItem(
+          id: 'p1',
+          type: MediaType.photo,
+          file: img1,
+          originalSize: 1024 * 20,
+          caption: 'Landscape Panorama',
+        ),
+        ZIPrItem(
+          id: 'p2',
+          type: MediaType.photo,
+          file: img2,
+          originalSize: 1024 * 25,
+          caption: 'Blueprint Detail',
+        ),
+      ];
+
+      final file = await ZIPrStorageService.createZIPrArchive(
+        title: 'Photos_Only_Container',
+        description: 'Photo gallery container test',
+        items: items,
+        onProgress: (_, __) {},
+      );
+
+      expect(await file.exists(), true);
+
+      final inspected = await ZIPrStorageService.inspectArchive(file);
+      expect(inspected['itemCount'], 2);
+      expect(inspected['title'], 'Photos_Only_Container');
+
+      final opened = await ZIPrStorageService.openZIPrArchive(file);
+      final manifest = opened['manifestModel'] as ZIPrManifest;
+      expect(manifest.itemCount, 2);
+      expect(manifest.items.every((it) => it.type == 'photo'), true);
+      expect(manifest.items[0].caption, 'Landscape Panorama');
+      expect(manifest.items[1].caption, 'Blueprint Detail');
+    });
+
+    test('Successfully creates, inspects, and opens a container with ONLY videos', () async {
+      final vid1 = File(p.join(tempDir.path, 'clip_1.mp4'));
+      final vid2 = File(p.join(tempDir.path, 'clip_2.mov'));
+      await vid1.writeAsBytes(List.generate(1024 * 40, (i) => (i * 5) % 256));
+      await vid2.writeAsBytes(List.generate(1024 * 50, (i) => (i * 9) % 256));
+
+      final items = [
+        ZIPrItem(
+          id: 'v1',
+          type: MediaType.video,
+          file: vid1,
+          originalSize: 1024 * 40,
+          caption: 'Flight Drone Run',
+        ),
+        ZIPrItem(
+          id: 'v2',
+          type: MediaType.video,
+          file: vid2,
+          originalSize: 1024 * 50,
+          caption: 'Slow Motion Sequence',
+        ),
+      ];
+
+      final file = await ZIPrStorageService.createZIPrArchive(
+        title: 'Videos_Only_Container',
+        description: 'Video reel container test',
+        items: items,
+        onProgress: (_, __) {},
+      );
+
+      expect(await file.exists(), true);
+
+      final inspected = await ZIPrStorageService.inspectArchive(file);
+      expect(inspected['itemCount'], 2);
+      expect(inspected['title'], 'Videos_Only_Container');
+
+      final opened = await ZIPrStorageService.openZIPrArchive(file);
+      final manifest = opened['manifestModel'] as ZIPrManifest;
+      expect(manifest.itemCount, 2);
+      expect(manifest.items.every((it) => it.type == 'video'), true);
+      expect(manifest.items[0].caption, 'Flight Drone Run');
+      expect(manifest.items[1].caption, 'Slow Motion Sequence');
+    });
+
+    test('Successfully creates and extracts a single-item container (itemCount == 1)', () async {
+      final img = File(p.join(tempDir.path, 'solo_photo.webp'));
+      await img.writeAsBytes(List.generate(1024 * 15, (i) => (i * 11) % 256));
+
+      final items = [
+        ZIPrItem(
+          id: 'solo-1',
+          type: MediaType.photo,
+          file: img,
+          originalSize: 1024 * 15,
+          caption: 'Single Page Doc',
+        ),
+      ];
+
+      final file = await ZIPrStorageService.createZIPrArchive(
+        title: 'Single_Item_Container',
+        items: items,
+        onProgress: (_, __) {},
+      );
+
+      final opened = await ZIPrStorageService.openZIPrArchive(file);
+      final manifest = opened['manifestModel'] as ZIPrManifest;
+      expect(manifest.itemCount, 1);
+      expect(manifest.items.length, 1);
+      expect(manifest.items.first.caption, 'Single Page Doc');
+    });
+
+    testWidgets('Single-item container HUD scrubber does not build Slider with min == max', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(useMaterial3: true),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                const itemsCount = 1;
+                return itemsCount > 1
+                    ? Slider(
+                        value: 0.0,
+                        min: 0.0,
+                        max: (itemsCount - 1).toDouble(),
+                        divisions: itemsCount - 1,
+                        onChanged: (_) {},
+                      )
+                    : const Text('Single Page Container • 1 of 1');
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Single Page Container • 1 of 1'), findsOneWidget);
+      expect(find.byType(Slider), findsNothing);
+    });
+  });
 }

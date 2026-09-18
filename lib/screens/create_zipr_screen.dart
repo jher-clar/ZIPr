@@ -32,14 +32,35 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
 
   int get _totalOriginalBytes => _items.fold(0, (sum, i) => sum + i.originalSize);
 
-  Future<void> _pickMediaGallery() async {
+  Future<void> _pickMediaGallery({bool photosOnly = false, bool videosOnly = false}) async {
     try {
       final picker = ImagePicker();
-      final List<XFile> mediaList = await picker.pickMultipleMedia();
+      List<XFile> mediaList = [];
+
+      if (photosOnly) {
+        mediaList = await picker.pickMultiImage();
+      } else if (videosOnly) {
+        final vid = await picker.pickVideo(source: ImageSource.gallery);
+        if (vid != null) {
+          mediaList = [vid];
+        }
+      } else {
+        mediaList = await picker.pickMultipleMedia();
+      }
 
       for (var xFile in mediaList) {
         final ext = p.extension(xFile.path).toLowerCase();
-        final isVideo = ext == '.mp4' || ext == '.mov' || ext == '.mkv' || ext == '.avi' || ext == '.webm';
+        final mime = xFile.mimeType?.toLowerCase() ?? '';
+        final isVideo = videosOnly ||
+            mime.startsWith('video/') ||
+            ext == '.mp4' ||
+            ext == '.mov' ||
+            ext == '.mkv' ||
+            ext == '.avi' ||
+            ext == '.webm' ||
+            ext == '.3gp' ||
+            ext == '.m4v' ||
+            ext == '.ts';
         final file = File(xFile.path);
         final size = await file.length();
 
@@ -108,84 +129,122 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Text(
-                'Add Media to Container',
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  child: Icon(Icons.photo_library_rounded, color: primaryColor, size: 22),
                 ),
-                title: Text('Gallery Photos & Videos',
-                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
-                subtitle: Text('Select multiple photos and videos at once',
-                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickMediaGallery();
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                Text(
+                  'Add Media to Container',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF10B981), size: 22),
                 ),
-                title: Text('Take Photo',
-                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
-                subtitle: Text('Capture high-res photo from camera',
-                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickFromCamera(MediaType.photo);
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFA855F7).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.collections_rounded, color: primaryColor, size: 22),
                   ),
-                  child: const Icon(Icons.videocam_rounded, color: Color(0xFFA855F7), size: 22),
+                  title: Text('Gallery Photos & Videos',
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                  subtitle: Text('Select multiple mixed media files at once',
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickMediaGallery();
+                  },
                 ),
-                title: Text('Record Video',
-                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
-                subtitle: Text('Record video from camera',
-                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickFromCamera(MediaType.video);
-                },
-              ),
-            ],
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: Color(0xFF38BDF8), size: 22),
+                  ),
+                  title: Text('Photos from Gallery',
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                  subtitle: Text('Select photos only from album',
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickMediaGallery(photosOnly: true);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFA855F7).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.video_library_rounded, color: Color(0xFFA855F7), size: 22),
+                  ),
+                  title: Text('Videos from Gallery',
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                  subtitle: Text('Select video from album',
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickMediaGallery(videosOnly: true);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF10B981), size: 22),
+                  ),
+                  title: Text('Take Photo',
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                  subtitle: Text('Capture high-res photo from camera',
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickFromCamera(MediaType.photo);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.videocam_rounded, color: Color(0xFFF59E0B), size: 22),
+                  ),
+                  title: Text('Record Video',
+                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                  subtitle: Text('Record video from camera',
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickFromCamera(MediaType.video);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -302,21 +361,31 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
             _progress = (i / _items.length) * 0.6;
           });
 
-          if (item.type == MediaType.photo) {
-            item.compressedFile = await CompressionService.compressPhoto(
-              item.file,
-              settings: _settings,
-            );
-          } else {
-            item.compressedFile = await CompressionService.compressVideo(
-              item.file,
-              settings: _settings,
-            );
+          try {
+            if (item.type == MediaType.photo) {
+              item.compressedFile = await CompressionService.compressPhoto(
+                item.file,
+                settings: _settings,
+              );
+            } else {
+              item.compressedFile = await CompressionService.compressVideo(
+                item.file,
+                settings: _settings,
+              );
+            }
+          } catch (err) {
+            debugPrint('Transcoding fallback for item $i: $err');
+            item.compressedFile = item.file;
           }
         }
 
         if (_settings.generateThumbnails) {
-          item.thumbnailFile = await CompressionService.generateThumbnail(item.file, item.type);
+          try {
+            item.thumbnailFile = await CompressionService.generateThumbnail(item.file, item.type);
+          } catch (err) {
+            debugPrint('Thumbnail skipped for item $i: $err');
+            item.thumbnailFile = null;
+          }
         }
       }
 
