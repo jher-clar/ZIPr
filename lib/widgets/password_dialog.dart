@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../theme/app_theme.dart';
 
 class PasswordDialog extends StatefulWidget {
   final String title;
@@ -65,15 +66,15 @@ class _PasswordDialogState extends State<PasswordDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
-    final dialogBg = isDark ? const Color(0xFF111726) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    const primaryColor = AppTheme.brandLeafGreen;
+    final dialogBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return AlertDialog(
       backgroundColor: dialogBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: borderCol),
+        side: BorderSide(color: borderCol, width: 1.2),
       ),
       title: Row(
         children: [
@@ -81,13 +82,14 @@ class _PasswordDialogState extends State<PasswordDialog> {
             'assets/icons/shield_lock.svg',
             width: 24,
             height: 24,
+            colorFilter: const ColorFilter.mode(AppTheme.brandLeafGreen, BlendMode.srcIn),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               widget.title,
               style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
               ),
@@ -102,24 +104,37 @@ class _PasswordDialogState extends State<PasswordDialog> {
           children: [
             Text(
               widget.prompt,
-              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 13.5),
+              style: TextStyle(
+                color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                fontSize: 13.5,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: _obscureText,
               autofocus: true,
-              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+              style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary),
               decoration: InputDecoration(
+                filled: true,
+                fillColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                 labelText: widget.isCreatingPassword ? 'New Password' : 'Password',
-                labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                prefixIcon: const Icon(Icons.lock_rounded, size: 20),
+                labelStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
+                prefixIcon: const Icon(Icons.lock_rounded, color: primaryColor, size: 20),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscureText ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
                   ),
                   onPressed: () => setState(() => _obscureText = !_obscureText),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderCol),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: primaryColor, width: 1.5),
                 ),
               ),
               onSubmitted: (_) => _submit(),
@@ -129,11 +144,21 @@ class _PasswordDialogState extends State<PasswordDialog> {
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: _obscureText,
-                style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary),
                 decoration: InputDecoration(
+                  filled: true,
+                  fillColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                   labelText: 'Confirm Password',
-                  labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                  prefixIcon: const Icon(Icons.lock_clock_rounded, size: 20),
+                  labelStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
+                  prefixIcon: const Icon(Icons.lock_clock_rounded, color: primaryColor, size: 20),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: borderCol),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: primaryColor, width: 1.5),
+                  ),
                 ),
                 onSubmitted: (_) => _submit(),
               ),
@@ -142,7 +167,7 @@ class _PasswordDialogState extends State<PasswordDialog> {
               const SizedBox(height: 8),
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12, fontWeight: FontWeight.w600),
+                style: TextStyle(color: isDark ? AppTheme.darkError : AppTheme.lightError, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ],
           ],
@@ -151,12 +176,13 @@ class _PasswordDialogState extends State<PasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+          child: Text('Cancel', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: primaryColor,
-            foregroundColor: isDark ? const Color(0xFF080B11) : Colors.white,
+            foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: _submit,
           child: Text(

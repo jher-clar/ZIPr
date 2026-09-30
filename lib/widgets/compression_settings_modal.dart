@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/compression_settings.dart';
+import '../theme/app_theme.dart';
 
 export '../models/compression_settings.dart';
 
@@ -56,10 +57,10 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final primaryColor = AppTheme.primary(context);
     final isOriginal = _settings.isOriginalQuality;
-    final modalBg = isDark ? const Color(0xFF0C101A) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final modalBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.88,
@@ -80,7 +81,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                    color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -107,20 +108,20 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
                           Text(
                             'HandBrake Conversion Studio',
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             'Advanced transcode engine, codecs & formats',
-                            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5),
+                            style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5),
                           ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                      icon: Icon(Icons.close_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -134,12 +135,12 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SegmentedButton<bool>(
               style: SegmentedButton.styleFrom(
-                backgroundColor: isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9),
+                backgroundColor: isDark ? AppTheme.darkSurface : AppTheme.lightSurfaceElev,
                 selectedBackgroundColor: isOriginal
-                    ? const Color(0xFF10B981).withValues(alpha: 0.25)
+                    ? AppTheme.brandLeafGreen.withValues(alpha: 0.25)
                     : primaryColor.withValues(alpha: 0.25),
-                selectedForegroundColor: isOriginal ? const Color(0xFF10B981) : primaryColor,
-                foregroundColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                selectedForegroundColor: isOriginal ? AppTheme.brandLeafGreen : primaryColor,
+                foregroundColor: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
                 side: BorderSide(color: borderCol),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -174,7 +175,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
               indicatorColor: primaryColor,
               indicatorWeight: 3,
               labelColor: primaryColor,
-              unselectedLabelColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              unselectedLabelColor: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
               labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               tabs: const [
                 Tab(text: 'Presets & Summary'),
@@ -200,7 +201,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF111726) : const Color(0xFFF8FAFC),
+              color: isDark ? AppTheme.darkSurface : AppTheme.lightSurface,
               border: Border(top: BorderSide(color: borderCol)),
             ),
             child: SafeArea(
@@ -210,7 +211,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
-                    foregroundColor: isDark ? const Color(0xFF0C101A) : Colors.white,
+                    foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.check_circle_rounded, size: 18),
@@ -237,27 +238,27 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+              color: AppTheme.brandLeafGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+              border: Border.all(color: AppTheme.brandLeafGreen.withValues(alpha: 0.4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 22),
+                    Icon(Icons.verified_rounded, color: AppTheme.brandLeafGreen, size: 22),
                     SizedBox(width: 8),
                     Text(
                       'Pristine Original Quality Active',
-                      style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(color: AppTheme.brandLeafGreen, fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '• 100% Zero pixel downscaling or compression.\n• Original camera bitrates, framerates & RAW color gamut preserved.\n• Untouched container formats (.jpg, .png, .mp4, .mov, .heic).',
-                  style: TextStyle(color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155), fontSize: 12, height: 1.4),
+                  style: TextStyle(color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary, fontSize: 12, height: 1.4),
                 ),
               ],
             ),
@@ -267,7 +268,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
 
         Text(
           'HandBrake Conversion Presets',
-          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14, fontWeight: FontWeight.bold),
+          style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 14, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
 
@@ -276,7 +277,16 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           title: 'Master Lossless Passthrough',
           subtitle: 'Bit-for-bit camera original • 0 re-encoding • 100% Quality',
           icon: Icons.stars_rounded,
-          badgeColor: const Color(0xFF10B981),
+          badgeColor: AppTheme.brandLeafGreen,
+          isDark: isDark,
+          borderCol: borderCol,
+        ),
+        _buildPresetTile(
+          preset: HandBrakePreset.maxEfficiencyLossless,
+          title: 'Max Efficiency (Zero Pixel Loss)',
+          subtitle: 'H.265 (HEVC) • WebP 95% • Source Pixels • Max Compression Density',
+          icon: Icons.auto_awesome_rounded,
+          badgeColor: AppTheme.brandSunYellow,
           isDark: isDark,
           borderCol: borderCol,
         ),
@@ -290,11 +300,29 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           borderCol: borderCol,
         ),
         _buildPresetTile(
+          preset: HandBrakePreset.superHq1080p,
+          title: 'Super HQ 1080p Surround (HEVC)',
+          subtitle: 'H.265 (HEVC) • 1080p FHD • RF 20 • Slow • AAC 320k • WebP 92%',
+          icon: Icons.high_quality_rounded,
+          badgeColor: AppTheme.brandSunYellow,
+          isDark: isDark,
+          borderCol: borderCol,
+        ),
+        _buildPresetTile(
           preset: HandBrakePreset.hq4kHevc,
           title: 'High Quality 4K / 2K Cinema',
           subtitle: 'H.265 (HEVC) • 4K UHD • RF 18 • WebP 95% • MKV',
           icon: Icons.four_k_rounded,
-          badgeColor: const Color(0xFFA855F7),
+          badgeColor: AppTheme.brandSunsetOrange,
+          isDark: isDark,
+          borderCol: borderCol,
+        ),
+        _buildPresetTile(
+          preset: HandBrakePreset.productionStandard,
+          title: 'Production Standard (ProRes/MOV)',
+          subtitle: 'QuickTime MOV • H.264 • RF 16 • Master Audio • WebP 95%',
+          icon: Icons.movie_filter_rounded,
+          badgeColor: AppTheme.brandIvory,
           isDark: isDark,
           borderCol: borderCol,
         ),
@@ -303,7 +331,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           title: 'Universal Mobile 720p',
           subtitle: 'Fast 720p30 • RF 24 • Fast encoding • MP4',
           icon: Icons.phone_android_rounded,
-          badgeColor: const Color(0xFFF59E0B),
+          badgeColor: AppTheme.brandSunYellow,
           isDark: isDark,
           borderCol: borderCol,
         ),
@@ -312,7 +340,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           title: 'Ultra-Compact Discord / Email',
           subtitle: 'SD 480p • RF 28 • Small file size target • JPEG 65%',
           icon: Icons.folder_zip_rounded,
-          badgeColor: const Color(0xFFEF4444),
+          badgeColor: AppTheme.brandSunsetOrange,
           isDark: isDark,
           borderCol: borderCol,
         ),
@@ -321,9 +349,59 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           title: 'Web Optimized Fast (WebM / VP9)',
           subtitle: 'WebM format • 1080p • RF 22 • WebP image streams',
           icon: Icons.language_rounded,
-          badgeColor: const Color(0xFF06B6D4),
+          badgeColor: AppTheme.brandLeafGreen,
           isDark: isDark,
           borderCol: borderCol,
+        ),
+
+        // HandBrake Size Guard Toggle Card
+        Container(
+          margin: const EdgeInsets.only(top: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: _settings.neverExceedOriginalSize
+                ? AppTheme.brandLeafGreen.withValues(alpha: 0.1)
+                : (isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _settings.neverExceedOriginalSize
+                  ? AppTheme.brandLeafGreen.withValues(alpha: 0.4)
+                  : borderCol,
+            ),
+          ),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Row(
+              children: [
+                Icon(
+                  Icons.shield_rounded,
+                  size: 18,
+                  color: _settings.neverExceedOriginalSize
+                      ? AppTheme.brandLeafGreen
+                      : (isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'HandBrake Size Guard (Anti-Inflation)',
+                  style: TextStyle(
+                    color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            subtitle: Text(
+              'Guarantees converted files never exceed original size. If conversion yields a larger file, the smaller original is preserved.',
+              style: TextStyle(
+                color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
+                fontSize: 11.5,
+              ),
+            ),
+            value: _settings.neverExceedOriginalSize,
+            activeThumbColor: AppTheme.brandLeafGreen,
+            onChanged: (val) => setState(() => _settings.neverExceedOriginalSize = val),
+          ),
         ),
 
         const SizedBox(height: 16),
@@ -331,7 +409,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF111726) : const Color(0xFFF8FAFC),
+            color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: borderCol),
           ),
@@ -354,6 +432,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
               _buildSpecRow('Framerate:', _settings.frameRate.label, isDark),
               _buildSpecRow('Audio Stream:', _settings.audioCodec.label, isDark),
               _buildSpecRow('Image Encoder:', '${_settings.imageFormat.label} (${_settings.photoQuality}%)', isDark),
+              _buildSpecRow('Size Guard:', _settings.neverExceedOriginalSize ? 'Strict (Never Inflates)' : 'Off', isDark),
             ],
           ),
         ),
@@ -367,8 +446,8 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5)),
-          Text(val, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 11.5, fontWeight: FontWeight.w600)),
+          Text(label, style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
+          Text(val, style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 11.5, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -385,8 +464,8 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
   }) {
     final isSelected = _settings.preset == preset;
     final tileBg = isDark
-        ? (isSelected ? badgeColor.withValues(alpha: 0.15) : const Color(0xFF111726))
-        : (isSelected ? badgeColor.withValues(alpha: 0.12) : const Color(0xFFF8FAFC));
+        ? (isSelected ? badgeColor.withValues(alpha: 0.15) : AppTheme.darkSurfaceElev)
+        : (isSelected ? badgeColor.withValues(alpha: 0.12) : AppTheme.lightSurfaceElev);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -412,18 +491,20 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
         title: Text(
           title,
           style: TextStyle(
-            color: isSelected ? (isDark ? Colors.white : const Color(0xFF0F172A)) : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
+            color: isSelected
+                ? (isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary)
+                : (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary),
             fontWeight: FontWeight.bold,
             fontSize: 13.5,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5),
+          style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5),
         ),
         trailing: isSelected
             ? Icon(Icons.check_circle_rounded, color: badgeColor, size: 20)
-            : Icon(Icons.chevron_right_rounded, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 20),
+            : Icon(Icons.chevron_right_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 20),
       ),
     );
   }
@@ -443,9 +524,9 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
               label: Text(fmt.label),
               selected: isSel,
               selectedColor: primaryColor.withValues(alpha: isDark ? 0.25 : 0.2),
-              backgroundColor: isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9),
+              backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
               labelStyle: TextStyle(
-                color: isSel ? primaryColor : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                color: isSel ? primaryColor : (isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                 fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                 fontSize: 12,
               ),
@@ -464,39 +545,44 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
 
         // Video Codec
         _buildSectionHeader('Video Encoder / Codec', Icons.memory_rounded, primaryColor, isDark),
-        ...VideoCodecOption.values.map((codec) {
-          final isSel = _settings.videoCodec == codec;
-          final cardBg = isDark
-              ? (isSel ? primaryColor.withValues(alpha: 0.12) : const Color(0xFF111726))
-              : (isSel ? primaryColor.withValues(alpha: 0.1) : const Color(0xFFF8FAFC));
+        RadioGroup<VideoCodecOption>(
+          groupValue: _settings.videoCodec,
+          onChanged: (val) {
+            if (val != null) {
+              setState(() {
+                _settings.videoCodec = val;
+                _settings.preset = HandBrakePreset.custom;
+              });
+            }
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: VideoCodecOption.values.map((codec) {
+              final isSel = _settings.videoCodec == codec;
+              final cardBg = isDark
+                  ? (isSel ? primaryColor.withValues(alpha: 0.12) : AppTheme.darkSurfaceElev)
+                  : (isSel ? primaryColor.withValues(alpha: 0.1) : AppTheme.lightSurfaceElev);
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSel ? primaryColor : borderCol,
-              ),
-            ),
-            child: RadioListTile<VideoCodecOption>(
-              dense: true,
-              value: codec,
-              groupValue: _settings.videoCodec,
-              activeColor: primaryColor,
-              title: Text(codec.label, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600, fontSize: 13)),
-              subtitle: Text(codec.description, style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5)),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _settings.videoCodec = val;
-                    _settings.preset = HandBrakePreset.custom;
-                  });
-                }
-              },
-            ),
-          );
-        }),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSel ? primaryColor : borderCol,
+                  ),
+                ),
+                child: RadioListTile<VideoCodecOption>(
+                  dense: true,
+                  value: codec,
+                  activeColor: primaryColor,
+                  title: Text(codec.label, style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                  subtitle: Text(codec.description, style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
 
         const SizedBox(height: 16),
 
@@ -505,7 +591,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9),
+            color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderCol),
           ),
@@ -513,8 +599,8 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
             child: DropdownButton<VideoResolutionLimit>(
               value: _settings.videoResolution,
               isExpanded: true,
-              dropdownColor: isDark ? const Color(0xFF111726) : Colors.white,
-              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+              dropdownColor: isDark ? AppTheme.darkSurface : Colors.white,
+              style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13),
               items: VideoResolutionLimit.values.map((res) {
                 return DropdownMenuItem(
                   value: res,
@@ -545,9 +631,9 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
               label: Text(fps.label),
               selected: isSel,
               selectedColor: primaryColor.withValues(alpha: isDark ? 0.25 : 0.2),
-              backgroundColor: isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9),
+              backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
               labelStyle: TextStyle(
-                color: isSel ? primaryColor : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                color: isSel ? primaryColor : (isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                 fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                 fontSize: 12,
               ),
@@ -579,7 +665,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: primaryColor,
             thumbColor: primaryColor,
-            inactiveTrackColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            inactiveTrackColor: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
             trackHeight: 4,
           ),
           child: Slider(
@@ -600,38 +686,54 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
 
         // Audio Stream
         _buildSectionHeader('Audio Track & Encoders', Icons.audiotrack_rounded, primaryColor, isDark),
-        ...AudioCodecOption.values.map((audio) {
-          final isSel = _settings.audioCodec == audio;
-          final cardBg = isDark
-              ? (isSel ? primaryColor.withValues(alpha: 0.12) : const Color(0xFF111726))
-              : (isSel ? primaryColor.withValues(alpha: 0.1) : const Color(0xFFF8FAFC));
+        RadioGroup<AudioCodecOption>(
+          groupValue: _settings.audioCodec,
+          onChanged: (val) {
+            if (val != null) {
+              setState(() {
+                _settings.audioCodec = val;
+                _settings.preset = HandBrakePreset.custom;
+              });
+            }
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: AudioCodecOption.values.map((audio) {
+              final isSel = _settings.audioCodec == audio;
+              final cardBg = isDark
+                  ? (isSel ? primaryColor.withValues(alpha: 0.12) : AppTheme.darkSurfaceElev)
+                  : (isSel ? primaryColor.withValues(alpha: 0.1) : AppTheme.lightSurfaceElev);
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSel ? primaryColor : borderCol,
-              ),
-            ),
-            child: RadioListTile<AudioCodecOption>(
-              dense: true,
-              value: audio,
-              groupValue: _settings.audioCodec,
-              activeColor: primaryColor,
-              title: Text(audio.label, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 12.5, fontWeight: FontWeight.w600)),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _settings.audioCodec = val;
-                    _settings.preset = HandBrakePreset.custom;
-                  });
-                }
-              },
-            ),
-          );
-        }),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSel ? primaryColor : borderCol,
+                  ),
+                ),
+                child: RadioListTile<AudioCodecOption>(
+                  dense: true,
+                  value: audio,
+                  activeColor: primaryColor,
+                  title: Text(audio.label, style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  subtitle: null,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildSectionHeader('Safety & Size Guard', Icons.security_rounded, primaryColor, isDark),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text('HandBrake Size Guard (Anti-Inflation)', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+          subtitle: Text('Never allow re-encoded video to exceed original source file size', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
+          value: _settings.neverExceedOriginalSize,
+          activeThumbColor: primaryColor,
+          onChanged: (val) => setState(() => _settings.neverExceedOriginalSize = val),
+        ),
       ],
     );
   }
@@ -643,39 +745,44 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
       children: [
         // Image Format
         _buildSectionHeader('Photo Output Format', Icons.image_outlined, primaryColor, isDark),
-        ...ImageFormatOption.values.map((fmt) {
-          final isSel = _settings.imageFormat == fmt;
-          final cardBg = isDark
-              ? (isSel ? primaryColor.withValues(alpha: 0.12) : const Color(0xFF111726))
-              : (isSel ? primaryColor.withValues(alpha: 0.1) : const Color(0xFFF8FAFC));
+        RadioGroup<ImageFormatOption>(
+          groupValue: _settings.imageFormat,
+          onChanged: (val) {
+            if (val != null) {
+              setState(() {
+                _settings.imageFormat = val;
+                _settings.preset = HandBrakePreset.custom;
+              });
+            }
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ImageFormatOption.values.map((fmt) {
+              final isSel = _settings.imageFormat == fmt;
+              final cardBg = isDark
+                  ? (isSel ? primaryColor.withValues(alpha: 0.12) : AppTheme.darkSurfaceElev)
+                  : (isSel ? primaryColor.withValues(alpha: 0.1) : AppTheme.lightSurfaceElev);
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 6),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSel ? primaryColor : borderCol,
-              ),
-            ),
-            child: RadioListTile<ImageFormatOption>(
-              dense: true,
-              value: fmt,
-              groupValue: _settings.imageFormat,
-              activeColor: primaryColor,
-              title: Text(fmt.label, style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600, fontSize: 13)),
-              subtitle: Text(fmt.description, style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5)),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _settings.imageFormat = val;
-                    _settings.preset = HandBrakePreset.custom;
-                  });
-                }
-              },
-            ),
-          );
-        }),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSel ? primaryColor : borderCol,
+                  ),
+                ),
+                child: RadioListTile<ImageFormatOption>(
+                  dense: true,
+                  value: fmt,
+                  activeColor: primaryColor,
+                  title: Text(fmt.label, style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+                  subtitle: Text(fmt.description, style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
 
         const SizedBox(height: 16),
 
@@ -694,7 +801,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: primaryColor,
             thumbColor: primaryColor,
-            inactiveTrackColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            inactiveTrackColor: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
             trackHeight: 4,
           ),
           child: Slider(
@@ -718,7 +825,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9),
+            color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderCol),
           ),
@@ -726,8 +833,8 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
             child: DropdownButton<ImageMaxDimension>(
               value: _settings.photoMaxDimension,
               isExpanded: true,
-              dropdownColor: isDark ? const Color(0xFF111726) : Colors.white,
-              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13),
+              dropdownColor: isDark ? AppTheme.darkSurface : Colors.white,
+              style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13),
               items: ImageMaxDimension.values.map((dim) {
                 return DropdownMenuItem(
                   value: dim,
@@ -752,19 +859,27 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
         _buildSectionHeader('Metadata & Optimizations', Icons.tune_rounded, primaryColor, isDark),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Preserve EXIF Metadata (GPS, ISO)', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13)),
-          subtitle: Text('Keeps camera timestamp, focal length, and location tags', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5)),
+          title: Text('Preserve EXIF Metadata (GPS, ISO)', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13)),
+          subtitle: Text('Keeps camera timestamp, focal length, and location tags', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
           value: _settings.keepExif,
           activeThumbColor: primaryColor,
           onChanged: (val) => setState(() => _settings.keepExif = val),
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: Text('Generate Fast Seek Previews', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13)),
-          subtitle: Text('Creates lightweight thumbnails for instant page scrubbing', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5)),
+          title: Text('Generate Fast Seek Previews', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13)),
+          subtitle: Text('Creates lightweight thumbnails for instant page scrubbing', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
           value: _settings.generateThumbnails,
           activeThumbColor: primaryColor,
           onChanged: (val) => setState(() => _settings.generateThumbnails = val),
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text('HandBrake Size Guard (Anti-Inflation)', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+          subtitle: Text('Never allow converted photos to exceed original file size', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5)),
+          value: _settings.neverExceedOriginalSize,
+          activeThumbColor: primaryColor,
+          onChanged: (val) => setState(() => _settings.neverExceedOriginalSize = val),
         ),
       ],
     );
@@ -779,7 +894,7 @@ class _CompressionSettingsModalState extends State<CompressionSettingsModal>
           const SizedBox(width: 6),
           Text(
             title,
-            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.bold),
+            style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13, fontWeight: FontWeight.bold),
           ),
         ],
       ),

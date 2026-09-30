@@ -1,10 +1,10 @@
 name: zipr
 description: "ZIPr - Mixed Media Compressor, Encrypted Container & PDF-like Viewer"
-publish_to: 'none'
-version: 1.0.0+1
+publish_to: "none"
+version: 1.5.0+1
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
   flutter:

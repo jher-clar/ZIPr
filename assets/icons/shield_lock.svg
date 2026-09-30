@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
     <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10B981"/>
-      <stop offset="100%" stop-color="#06B6D4"/>
+      <stop offset="0%" stop-color="#7ED957"/>
+      <stop offset="100%" stop-color="#2A3B19"/>
     </linearGradient>
   </defs>
-  <path d="M32 6 L12 15 V28 C12 43 21 54 32 58 C43 54 52 43 52 28 V15 L32 6 Z" fill="#064E3B" fill-opacity="0.3" stroke="url(#shieldGrad)" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M32 6 L12 15 V28 C12 43 21 54 32 58 C43 54 52 43 52 28 V15 L32 6 Z" fill="#253519" fill-opacity="0.4" stroke="url(#shieldGrad)" stroke-width="3" stroke-linejoin="round"/>
   <!-- Keyhole / Shackle -->
   <rect x="25" y="30" width="14" height="12" rx="3" fill="url(#shieldGrad)"/>
   <path d="M28 30 V25 C28 22.8 29.8 21 32 21 C34.2 21 36 22.8 36 25 V30" stroke="url(#shieldGrad)" stroke-width="2.5" stroke-linecap="round"/>

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../models/zipr_item.dart';
 import '../services/compression_service.dart';
 import '../services/zipr_storage_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/compression_settings_modal.dart';
 import '../widgets/password_dialog.dart';
 
@@ -77,7 +78,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error picking media: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppTheme.darkError,
           ),
         );
       }
@@ -111,7 +112,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Camera error: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppTheme.darkError,
           ),
         );
       }
@@ -120,11 +121,11 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
 
   void _showMediaPickerSheet() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final primaryColor = AppTheme.primary(context);
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -140,14 +141,14 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                    color: isDark ? AppTheme.darkBorderLight : AppTheme.lightBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 Text(
                   'Add Media to Container',
                   style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -163,9 +164,9 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                     child: Icon(Icons.collections_rounded, color: primaryColor, size: 22),
                   ),
                   title: Text('Gallery Photos & Videos',
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600)),
                   subtitle: Text('Select multiple mixed media files at once',
-                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickMediaGallery();
@@ -175,15 +176,15 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      color: AppTheme.brandLeafGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.photo_library_rounded, color: Color(0xFF38BDF8), size: 22),
+                    child: const Icon(Icons.photo_library_rounded, color: AppTheme.brandLeafGreen, size: 22),
                   ),
                   title: Text('Photos from Gallery',
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600)),
                   subtitle: Text('Select photos only from album',
-                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickMediaGallery(photosOnly: true);
@@ -193,15 +194,15 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFA855F7).withValues(alpha: 0.15),
+                      color: AppTheme.brandSunYellow.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.video_library_rounded, color: Color(0xFFA855F7), size: 22),
+                    child: const Icon(Icons.video_library_rounded, color: AppTheme.brandSunYellow, size: 22),
                   ),
                   title: Text('Videos from Gallery',
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600)),
                   subtitle: Text('Select video from album',
-                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickMediaGallery(videosOnly: true);
@@ -211,15 +212,15 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      color: AppTheme.brandLeafGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF10B981), size: 22),
+                    child: const Icon(Icons.camera_alt_rounded, color: AppTheme.brandLeafGreen, size: 22),
                   ),
                   title: Text('Take Photo',
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600)),
                   subtitle: Text('Capture high-res photo from camera',
-                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickFromCamera(MediaType.photo);
@@ -229,15 +230,15 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                      color: AppTheme.brandSunsetOrange.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.videocam_rounded, color: Color(0xFFF59E0B), size: 22),
+                    child: const Icon(Icons.videocam_rounded, color: AppTheme.brandSunsetOrange, size: 22),
                   ),
                   title: Text('Record Video',
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600)),
                   subtitle: Text('Record video from camera',
-                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickFromCamera(MediaType.video);
@@ -259,24 +260,39 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF111726) : Colors.white,
+        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+        ),
         title: Text('Page ${index + 1} Caption',
-            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold)),
+            style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           maxLines: 3,
-          style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A)),
+          style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary),
           decoration: InputDecoration(
             hintText: 'Enter title or commentary for this page...',
-            hintStyle: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+            hintStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
+            filled: true,
+            fillColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+            child: Text('Cancel', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted)),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.brandLeafGreen,
+              foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
             onPressed: () {
               setState(() {
                 _items[index].caption = controller.text.trim();
@@ -298,13 +314,14 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
   }
 
   Future<void> _togglePasswordProtection() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (_password != null) {
       setState(() => _password = null);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password encryption removed.'),
-            backgroundColor: Color(0xFF334155),
+          SnackBar(
+            content: const Text('Password encryption removed.'),
+            backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.brandDeepGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -322,7 +339,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('AES-256 Password encryption active!'),
-              backgroundColor: Color(0xFF10B981),
+              backgroundColor: AppTheme.brandLeafGreen,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -373,19 +390,31 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                 settings: _settings,
               );
             }
+
+            // HandBrake Size Guard: Double check converted size against original
+            if (_settings.neverExceedOriginalSize && item.compressedFile != null) {
+              final finalLen = await item.compressedFile!.length();
+              if (finalLen >= item.originalSize) {
+                item.compressedFile = item.file;
+              }
+            }
           } catch (err) {
             debugPrint('Transcoding fallback for item $i: $err');
             item.compressedFile = item.file;
           }
         }
 
-        if (_settings.generateThumbnails) {
+        // Only generate thumbnails when NOT in original quality and generateThumbnails is enabled.
+        // In Original Quality mode, thumbnails are skipped to prevent container size inflation.
+        if (!_settings.isOriginalQuality && _settings.generateThumbnails) {
           try {
             item.thumbnailFile = await CompressionService.generateThumbnail(item.file, item.type);
           } catch (err) {
             debugPrint('Thumbnail skipped for item $i: $err');
             item.thumbnailFile = null;
           }
+        } else {
+          item.thumbnailFile = null;
         }
       }
 
@@ -405,7 +434,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppTheme.brandLeafGreen,
             content: Text('Document "$title.zipr" saved to Library!'),
             behavior: SnackBarBehavior.floating,
           ),
@@ -416,13 +445,30 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppTheme.darkError,
             content: Text('Error creating ZIPr: $e'),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } finally {
+      // Clean up temporary transcoded files and thumbnails so disk space is immediately reclaimed
+      for (final item in _items) {
+        if (item.compressedFile != null && item.compressedFile!.path != item.file.path) {
+          try {
+            if (await item.compressedFile!.exists()) {
+              await item.compressedFile!.delete();
+            }
+          } catch (_) {}
+        }
+        if (item.thumbnailFile != null) {
+          try {
+            if (await item.thumbnailFile!.exists()) {
+              await item.thumbnailFile!.delete();
+            }
+          } catch (_) {}
+        }
+      }
       if (mounted) {
         setState(() => _isProcessing = false);
       }
@@ -432,16 +478,16 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final primaryColor = AppTheme.primary(context);
     final bg = Theme.of(context).scaffoldBackgroundColor;
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
         title: Text('Creation Studio',
-            style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w800, fontSize: 17)),
+            style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w800, fontSize: 17)),
         actions: [
           IconButton(
             icon: SvgPicture.asset(
@@ -456,9 +502,11 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
           IconButton(
             icon: Icon(
               _password != null ? Icons.lock_rounded : Icons.lock_open_rounded,
-              color: _password != null ? const Color(0xFF10B981) : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+              color: _password != null
+                  ? AppTheme.brandLeafGreen
+                  : primaryColor.withValues(alpha: 0.7),
             ),
-            tooltip: _password != null ? 'AES Encrypted' : 'Add Password',
+            tooltip: _password != null ? 'AES Encrypted (Tap to remove)' : 'Add Password Protection',
             onPressed: _togglePasswordProtection,
           ),
           const SizedBox(width: 4),
@@ -480,14 +528,14 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                           child: CircularProgressIndicator(
                             value: _progress > 0 ? _progress : null,
                             strokeWidth: 5,
-                            color: primaryColor,
-                            backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                            color: AppTheme.brandLeafGreen,
+                            backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                           ),
                         ),
                         Text(
                           '${(_progress * 100).toInt()}%',
                           style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 18),
+                              color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.bold, fontSize: 18),
                         ),
                       ],
                     ),
@@ -496,14 +544,14 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                       _statusMessage,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A), fontSize: 15, fontWeight: FontWeight.w600),
+                          color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _settings.isOriginalQuality
                           ? 'Lossless container • 0 pixel shrinkage'
                           : 'Optimizing media container into .zipr format',
-                      style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), fontSize: 12),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12),
                     ),
                   ],
                 ),
@@ -516,12 +564,12 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
                   child: TextField(
                     controller: _titleController,
-                    style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontWeight: FontWeight.w600, fontSize: 15),
+                    style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.w600, fontSize: 15),
                     decoration: InputDecoration(
                       labelText: 'Container Title',
-                      labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                      labelStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                       suffixIcon: _password != null
-                          ? const Icon(Icons.lock_rounded, color: Color(0xFF10B981), size: 18)
+                          ? const Icon(Icons.lock_rounded, color: AppTheme.brandLeafGreen, size: 18)
                           : null,
                     ),
                   ),
@@ -540,30 +588,44 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             decoration: BoxDecoration(
                               color: _settings.isOriginalQuality
-                                  ? const Color(0xFF10B981).withValues(alpha: isDark ? 0.12 : 0.1)
-                                  : primaryColor.withValues(alpha: isDark ? 0.12 : 0.1),
+                                  ? AppTheme.brandLeafGreen.withValues(alpha: isDark ? 0.14 : 0.1)
+                                  : primaryColor.withValues(alpha: isDark ? 0.14 : 0.1),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: _settings.isOriginalQuality
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                                    : primaryColor.withValues(alpha: 0.4),
+                                    ? AppTheme.brandLeafGreen.withValues(alpha: 0.45)
+                                    : primaryColor.withValues(alpha: 0.45),
                               ),
                             ),
                             child: Row(
                               children: [
                                 Icon(
-                                  _settings.isOriginalQuality ? Icons.stars_rounded : Icons.tune_rounded,
+                                  _settings.isOriginalQuality
+                                      ? Icons.stars_rounded
+                                      : _settings.preset == HandBrakePreset.maxEfficiencyLossless
+                                          ? Icons.auto_awesome_rounded
+                                          : Icons.tune_rounded,
                                   size: 16,
-                                  color: _settings.isOriginalQuality ? const Color(0xFF10B981) : primaryColor,
+                                  color: _settings.isOriginalQuality
+                                      ? AppTheme.brandLeafGreen
+                                      : _settings.preset == HandBrakePreset.maxEfficiencyLossless
+                                          ? AppTheme.brandSunYellow
+                                          : primaryColor,
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     _settings.isOriginalQuality
                                         ? 'Original Master (Lossless • 0 Loss)'
-                                        : 'HandBrake: ${_settings.preset == HandBrakePreset.custom ? "${_settings.videoResolution.label.split(' ').first} • RF ${_settings.qualityRf}" : _settings.preset.name.toUpperCase()}',
+                                        : _settings.preset == HandBrakePreset.maxEfficiencyLossless
+                                            ? 'Max Efficiency Lossless (0 Pixel Loss)'
+                                            : 'HandBrake: ${_settings.preset == HandBrakePreset.custom ? "${_settings.videoResolution.label.split(' ').first} • RF ${_settings.qualityRf}" : _settings.preset.name.toUpperCase()}',
                                     style: TextStyle(
-                                      color: _settings.isOriginalQuality ? const Color(0xFF10B981) : primaryColor,
+                                      color: _settings.isOriginalQuality
+                                          ? AppTheme.brandLeafGreen
+                                          : _settings.preset == HandBrakePreset.maxEfficiencyLossless
+                                              ? AppTheme.brandSunYellow
+                                              : primaryColor,
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -571,7 +633,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Icon(Icons.arrow_drop_down_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), size: 18),
+                                Icon(Icons.arrow_drop_down_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 18),
                               ],
                             ),
                           ),
@@ -580,7 +642,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                       const SizedBox(width: 10),
                       Text(
                         '${_items.length} Items • ${ZIPrItem.formatBytes(_totalOriginalBytes)}',
-                        style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5, fontWeight: FontWeight.w600),
+                        style: TextStyle(color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary, fontSize: 11.5, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -619,17 +681,18 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                 'assets/icons/document_feed.svg',
                                 width: 56,
                                 height: 56,
+                                colorFilter: const ColorFilter.mode(AppTheme.brandLeafGreen, BlendMode.srcIn),
                               ),
                               const SizedBox(height: 14),
                               Text(
                                 'No Media Added Yet',
                                 style: TextStyle(
-                                    color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w700),
+                                    color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 16, fontWeight: FontWeight.w700),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'Tap "Add Photos & Videos" to build container',
-                                style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), fontSize: 12.5),
+                                style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12.5),
                               ),
                             ],
                           ),
@@ -637,9 +700,8 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                       : ReorderableListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: _items.length,
-                          onReorder: (oldIndex, newIndex) {
+                          onReorderItem: (oldIndex, newIndex) {
                             setState(() {
-                              if (newIndex > oldIndex) newIndex -= 1;
                               final item = _items.removeAt(oldIndex);
                               _items.insert(newIndex, item);
                             });
@@ -663,13 +725,13 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                   height: 44,
                                   decoration: BoxDecoration(
                                     color: isVideo
-                                        ? const Color(0xFFA855F7).withValues(alpha: 0.15)
+                                        ? AppTheme.brandSunYellow.withValues(alpha: 0.15)
                                         : primaryColor.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(
                                     isVideo ? Icons.videocam_rounded : Icons.image_rounded,
-                                    color: isVideo ? const Color(0xFFA855F7) : primaryColor,
+                                    color: isVideo ? AppTheme.brandSunYellow : primaryColor,
                                     size: 22,
                                   ),
                                 ),
@@ -678,14 +740,14 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF0B101D) : const Color(0xFFF1F5F9),
+                                        color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                                         borderRadius: BorderRadius.circular(4),
                                         border: Border.all(color: borderCol, width: 0.8),
                                       ),
                                       child: Text(
                                         'Page ${index + 1}',
                                         style: TextStyle(
-                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 10.5, fontWeight: FontWeight.bold),
+                                            color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 10.5, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
@@ -693,7 +755,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                       child: Text(
                                         p.basename(item.file.path),
                                         style: TextStyle(
-                                            color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A), fontSize: 13.5, fontWeight: FontWeight.w600),
+                                            color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -703,7 +765,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                 subtitle: Text(
                                   item.caption.isNotEmpty ? 'Caption: ${item.caption}' : item.formattedOriginalSize,
                                   style: TextStyle(
-                                    color: item.caption.isNotEmpty ? primaryColor : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                                    color: item.caption.isNotEmpty ? primaryColor : (isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                                     fontSize: 12,
                                   ),
                                   maxLines: 1,
@@ -713,16 +775,16 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: Icon(Icons.notes_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), size: 20),
+                                      icon: Icon(Icons.notes_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 20),
                                       tooltip: 'Add / Edit Caption',
                                       onPressed: () => _editCaption(index),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                                      icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.darkError, size: 20),
                                       tooltip: 'Remove',
                                       onPressed: () => setState(() => _items.removeAt(index)),
                                     ),
-                                    Icon(Icons.drag_handle_rounded, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 20),
+                                    Icon(Icons.drag_handle_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 20),
                                   ],
                                 ),
                               ),
@@ -735,7 +797,7 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0C101A) : Colors.white,
+                    color: isDark ? AppTheme.darkSurface : Colors.white,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                     border: Border(top: BorderSide(color: borderCol)),
                   ),
@@ -746,7 +808,16 @@ class _CreateZIPrScreenState extends State<CreateZIPrScreen> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primaryColor,
-                          foregroundColor: isDark ? const Color(0xFF080B11) : Colors.white,
+                          foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
+                          disabledBackgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
+                          disabledForegroundColor: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
+                          elevation: _items.isEmpty ? 0 : 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: _items.isEmpty
+                                ? BorderSide(color: borderCol, width: 0.8)
+                                : BorderSide.none,
+                          ),
                         ),
                         onPressed: _items.isEmpty ? null : _buildAndSaveZIPr,
                         child: Row(

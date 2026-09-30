@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import '../theme/theme_manager.dart';
 
 class ThemeSelectorModal extends StatelessWidget {
@@ -17,16 +18,17 @@ class ThemeSelectorModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = AppTheme.primary(context);
 
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeManager.instance.themeModeNotifier,
       builder: (context, currentMode, _) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : Colors.white,
+            color: isDark ? AppTheme.darkSurface : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             border: Border(
-              top: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              top: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
             ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -41,7 +43,7 @@ class ThemeSelectorModal extends StatelessWidget {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                      color: isDark ? AppTheme.darkBorderLight : AppTheme.lightBorderLight,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -51,12 +53,12 @@ class ThemeSelectorModal extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.15),
+                        color: primaryColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.palette_outlined,
-                        color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                        color: primaryColor,
                         size: 22,
                       ),
                     ),
@@ -64,7 +66,7 @@ class ThemeSelectorModal extends StatelessWidget {
                     Text(
                       'App Appearance & Theme',
                       style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? AppTheme.brandIvory : AppTheme.lightTextPrimary,
                         fontSize: 16.5,
                         fontWeight: FontWeight.w800,
                       ),
@@ -75,7 +77,7 @@ class ThemeSelectorModal extends StatelessWidget {
                 Text(
                   'Choose your preferred interface theme or synchronize automatically with your device settings.',
                   style: TextStyle(
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                     fontSize: 12.5,
                   ),
                 ),
@@ -84,12 +86,13 @@ class ThemeSelectorModal extends StatelessWidget {
                 // 1. Dark Mode
                 _buildThemeOption(
                   context: context,
-                  title: 'Dark Mode (Midnight Obsidian)',
-                  subtitle: 'Deep blacks, vibrant cyan glow, optimized for low-light & OLED',
+                  title: 'Dark Mode (Deep Forest Moss)',
+                  subtitle: 'Deep pine canvas, leaf emerald accents, matched with brand emblem',
                   icon: Icons.dark_mode_rounded,
                   mode: ThemeMode.dark,
                   isSelected: currentMode == ThemeMode.dark,
                   isDark: isDark,
+                  primaryColor: primaryColor,
                 ),
 
                 const SizedBox(height: 10),
@@ -97,12 +100,13 @@ class ThemeSelectorModal extends StatelessWidget {
                 // 2. Light Mode
                 _buildThemeOption(
                   context: context,
-                  title: 'Light Mode (Clean White)',
-                  subtitle: 'Ultra-clean white minimalism, high daylight readability',
+                  title: 'Light Mode (Warm Linen & Pine)',
+                  subtitle: 'Warm ivory canvas, crisp cards & deep forest green typography',
                   icon: Icons.light_mode_rounded,
                   mode: ThemeMode.light,
                   isSelected: currentMode == ThemeMode.light,
                   isDark: isDark,
+                  primaryColor: primaryColor,
                 ),
 
                 const SizedBox(height: 10),
@@ -116,6 +120,7 @@ class ThemeSelectorModal extends StatelessWidget {
                   mode: ThemeMode.system,
                   isSelected: currentMode == ThemeMode.system,
                   isDark: isDark,
+                  primaryColor: primaryColor,
                 ),
               ],
             ),
@@ -133,14 +138,15 @@ class ThemeSelectorModal extends StatelessWidget {
     required ThemeMode mode,
     required bool isSelected,
     required bool isDark,
+    required Color primaryColor,
   }) {
-    final activeColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final activeColor = primaryColor;
     final cardBg = isDark
-        ? (isSelected ? const Color(0xFF192238) : const Color(0xFF0B101D))
-        : (isSelected ? const Color(0xFFF0F9FF) : const Color(0xFFF8FAFC));
+        ? (isSelected ? AppTheme.darkSurfaceElev : const Color(0xFF1E2C17))
+        : (isSelected ? const Color(0xFFF0ECE0) : const Color(0xFFF9F7F1));
     final borderColor = isSelected
         ? activeColor
-        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0));
+        : (isDark ? AppTheme.darkBorder : AppTheme.lightBorder);
 
     return InkWell(
       onTap: () {
@@ -162,7 +168,7 @@ class ThemeSelectorModal extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? activeColor.withValues(alpha: 0.2)
-                    : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                    : (isDark ? AppTheme.darkBorder : AppTheme.lightBorderLight),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: isSelected ? activeColor : (isDark ? Colors.white70 : const Color(0xFF475569)), size: 22),
@@ -175,7 +181,7 @@ class ThemeSelectorModal extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? AppTheme.brandIvory : AppTheme.lightTextPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -184,7 +190,7 @@ class ThemeSelectorModal extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                       fontSize: 11.5,
                     ),
                   ),
@@ -192,7 +198,7 @@ class ThemeSelectorModal extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_circle_rounded, color: activeColor, size: 22),
+              Icon(Icons.check_circle_rounded, color: activeColor, size: 20),
           ],
         ),
       ),

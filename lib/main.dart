@@ -21,6 +21,10 @@ void main() async {
   // Initialize theme mode from persistent storage
   await ThemeManager.instance.init();
 
+  // Configure high-performance image cache to effortlessly handle 8K+ photos without exceeding Android OS process heap limits
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 256 * 1024 * 1024; // 256 MB memory cache
+  PaintingBinding.instance.imageCache.maximumSize = 50;
+
   runApp(const ZIPrApp());
 }
 

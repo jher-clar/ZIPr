@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/cloud_storage_service.dart';
+import '../theme/app_theme.dart';
 
 class DirectLinkImportDialog extends StatefulWidget {
   const DirectLinkImportDialog({super.key});
@@ -50,7 +51,7 @@ class _DirectLinkImportDialogState extends State<DirectLinkImportDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cloud archive downloaded & added to Library!'),
-            backgroundColor: Color(0xFF10B981),
+            backgroundColor: AppTheme.brandLeafGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -62,7 +63,7 @@ class _DirectLinkImportDialogState extends State<DirectLinkImportDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Import failed: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppTheme.darkError,
           ),
         );
       }
@@ -71,19 +72,24 @@ class _DirectLinkImportDialogState extends State<DirectLinkImportDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
+    final inputBg = isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev;
+
     return AlertDialog(
-      backgroundColor: const Color(0xFF111726),
+      backgroundColor: dialogBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFF1E293B)),
+        side: BorderSide(color: borderCol),
       ),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.link_rounded, color: Color(0xFF38BDF8), size: 22),
-          SizedBox(width: 10),
+          const Icon(Icons.link_rounded, color: AppTheme.brandLeafGreen, size: 22),
+          const SizedBox(width: 10),
           Text(
             'Import Cloud Link',
-            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -95,13 +101,13 @@ class _DirectLinkImportDialogState extends State<DirectLinkImportDialog> {
                 children: [
                   LinearProgressIndicator(
                     value: _progress > 0 ? _progress : null,
-                    color: const Color(0xFF38BDF8),
-                    backgroundColor: const Color(0xFF1E293B),
+                    color: AppTheme.brandLeafGreen,
+                    backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                   ),
                   const SizedBox(height: 14),
                   Text(
                     _status,
-                    style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 12.5),
+                    style: TextStyle(color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary, fontSize: 12.5),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -111,39 +117,55 @@ class _DirectLinkImportDialogState extends State<DirectLinkImportDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Paste any public Google Drive, MEGA, OneDrive, or direct HTTP/HTTPS link to download into ZIPr:',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+                  style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12.5),
                 ),
                 const SizedBox(height: 14),
                 TextField(
                   controller: _urlController,
-                  style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                  style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5),
                   decoration: InputDecoration(
                     hintText: 'https://drive.google.com/... or https://mega.nz/...',
-                    hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                    prefixIcon: const Icon(Icons.cloud_download_rounded, color: Color(0xFF38BDF8), size: 18),
+                    hintStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12),
+                    prefixIcon: const Icon(Icons.cloud_download_rounded, color: AppTheme.brandLeafGreen, size: 18),
                     filled: true,
-                    fillColor: const Color(0xFF0C101A),
+                    fillColor: inputBg,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF1E293B)),
+                      borderSide: BorderSide(color: borderCol),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: borderCol),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.brandLeafGreen, width: 1.5),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _nameController,
-                  style: const TextStyle(color: Colors.white, fontSize: 13.5),
+                  style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5),
                   decoration: InputDecoration(
                     hintText: 'Optional container name (e.g. Project_Vault)',
-                    hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                    prefixIcon: const Icon(Icons.edit_note_rounded, color: Color(0xFF94A3B8), size: 18),
+                    hintStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12),
+                    prefixIcon: Icon(Icons.edit_note_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 18),
                     filled: true,
-                    fillColor: const Color(0xFF0C101A),
+                    fillColor: inputBg,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF1E293B)),
+                      borderSide: BorderSide(color: borderCol),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: borderCol),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.brandLeafGreen, width: 1.5),
                     ),
                   ),
                 ),
@@ -154,12 +176,12 @@ class _DirectLinkImportDialogState extends State<DirectLinkImportDialog> {
           : [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
+                child: Text('Cancel', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF38BDF8),
-                  foregroundColor: const Color(0xFF0C101A),
+                  backgroundColor: AppTheme.brandLeafGreen,
+                  foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
                 ),
                 onPressed: _startImport,
                 child: const Text('Download & Import', style: TextStyle(fontWeight: FontWeight.bold)),

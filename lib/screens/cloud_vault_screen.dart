@@ -6,6 +6,7 @@ import '../models/cloud_storage_models.dart';
 import '../models/zipr_manifest.dart';
 import '../services/cloud_storage_service.dart';
 import '../services/zipr_storage_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/direct_link_import_dialog.dart';
 import '../widgets/password_dialog.dart';
 import '../widgets/theme_selector_modal.dart';
@@ -92,9 +93,9 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF111726) : Colors.white,
+            color: isDark ? AppTheme.darkSurface : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+            border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -104,7 +105,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
               Text(
                 'Streaming from ${item.provider.displayName}...',
                 style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -129,35 +130,79 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
 
         if (pass == null) return;
 
+        if (!mounted) return;
+        BuildContext? decryptLoadingContext;
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (_) => Center(
-            child: CircularProgressIndicator(color: item.provider.brandColor),
-          ),
+          builder: (dCtx) {
+            decryptLoadingContext = dCtx;
+            return Center(
+              child: CircularProgressIndicator(color: item.provider.brandColor),
+            );
+          },
         );
 
-        final decrypted = await ZIPrStorageService.openZIPrArchive(
-          File(opened['cachedFile']?.path ?? ''),
-          password: pass,
-        );
-        if (!mounted) return;
-        Navigator.of(context, rootNavigator: true).pop(); // dismiss
+        final targetFile = (opened['cachedFile'] as File?) ??
+            (opened['archiveFile'] as File?) ??
+            (item.localCachedPath != null ? File(item.localCachedPath!) : null);
 
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ZIPrFeedViewerScreen(
-              archiveDir: decrypted['dir'] as Directory,
-              manifest: decrypted['manifestModel'] as ZIPrManifest,
+        if (targetFile == null || !await targetFile.exists()) {
+          if (decryptLoadingContext != null && decryptLoadingContext!.mounted) {
+            Navigator.of(decryptLoadingContext!).pop();
+          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cannot locate downloaded container file'),
+              backgroundColor: AppTheme.darkError,
             ),
-          ),
-        );
+          );
+          return;
+        }
+
+        try {
+          final decrypted = await ZIPrStorageService.openZIPrArchive(
+            targetFile,
+            password: pass,
+          );
+          if (decryptLoadingContext != null && decryptLoadingContext!.mounted) {
+            Navigator.of(decryptLoadingContext!).pop();
+            decryptLoadingContext = null;
+          }
+
+          if (!mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ZIPrFeedViewerScreen(
+                archiveDir: decrypted['dir'] as Directory,
+                manifest: decrypted['manifestModel'] as ZIPrManifest,
+                archiveFile: targetFile,
+              ),
+            ),
+          );
+        } catch (e) {
+          if (decryptLoadingContext != null && decryptLoadingContext!.mounted) {
+            Navigator.of(decryptLoadingContext!).pop();
+            decryptLoadingContext = null;
+          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Decryption failed: $e'),
+              backgroundColor: AppTheme.darkError,
+            ),
+          );
+        }
       } else {
+        if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ZIPrFeedViewerScreen(
               archiveDir: opened['dir'] as Directory,
               manifest: opened['manifestModel'] as ZIPrManifest,
+              archiveFile: (opened['cachedFile'] as File?) ??
+                  (item.localCachedPath != null ? File(item.localCachedPath!) : null),
             ),
           ),
         );
@@ -168,7 +213,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to stream cloud archive: $e'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppTheme.darkError,
         ),
       );
     }
@@ -184,9 +229,9 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF111726) : Colors.white,
+            color: isDark ? AppTheme.darkSurface : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+            border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -196,7 +241,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
               Text(
                 'Downloading ${item.name}...',
                 style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -214,7 +259,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: AppTheme.brandLeafGreen,
           content: Row(
             children: [
               const Icon(Icons.download_done_rounded, color: Colors.white, size: 20),
@@ -233,7 +278,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Download error: $e'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppTheme.darkError,
         ),
       );
     }
@@ -248,7 +293,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('No local .zipr files found to upload.'),
-          backgroundColor: Color(0xFF334155),
+          backgroundColor: AppTheme.darkSurfaceElev,
         ),
       );
       return;
@@ -257,7 +302,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
     if (!mounted) return;
     final selectedFile = await showModalBottomSheet<File>(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -270,7 +315,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
             children: [
               Text('Select Local Container to Upload',
                   style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   )),
@@ -279,7 +324,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                     leading: Icon(Icons.folder_zip_rounded, color: provider.brandColor),
                     title: Text(
                       f.path.split(Platform.pathSeparator).last,
-                      style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13.5),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5),
                     ),
                     onTap: () => Navigator.pop(ctx, f),
                   )),
@@ -303,21 +348,21 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF111726) : Colors.white,
+        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
         title: Text('Delete from Cloud?',
             style: TextStyle(
-              color: isDark ? Colors.white : const Color(0xFF0F172A),
+              color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
               fontWeight: FontWeight.bold,
             )),
         content: Text('Remove "${item.name}" from ${item.provider.displayName}?',
-            style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+            style: TextStyle(color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+            child: Text('Cancel', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkError),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
           ),
@@ -339,10 +384,10 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF111726) : Colors.white,
+        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+          side: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
         ),
         title: Row(
           children: [
@@ -350,7 +395,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
             const SizedBox(width: 8),
             Text(
               '${provider.displayName} Account',
-              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 16),
+              style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 16),
             ),
           ],
         ),
@@ -359,14 +404,14 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Account Email or Username:',
-                style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 12)),
+                style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
             const SizedBox(height: 6),
             TextField(
               controller: controller,
-              style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 14),
+              style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 14),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: isDark ? const Color(0xFF0B101D) : const Color(0xFFF1F5F9),
+                fillColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
@@ -375,7 +420,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+            child: Text('Cancel', style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: provider.brandColor),
@@ -404,7 +449,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final primaryColor = AppTheme.primary(context);
     final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
@@ -419,7 +464,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
             Text(
               'Cloud Vault',
               style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: 16.5,
               ),
@@ -445,7 +490,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
             },
           ),
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), size: 22),
+            icon: Icon(Icons.refresh_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 22),
             tooltip: 'Refresh Cloud Files',
             onPressed: _loadCloudData,
           ),
@@ -458,7 +503,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
           indicatorColor: primaryColor,
           indicatorWeight: 3,
           labelColor: primaryColor,
-          unselectedLabelColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          unselectedLabelColor: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: _providers.map((p) {
             return Tab(
@@ -485,13 +530,13 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
   Widget _buildProviderView(CloudProvider provider, bool isDark) {
     final acc = _getCurrentAccount(provider);
     final files = _filesByProvider[provider] ?? [];
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return RefreshIndicator(
       onRefresh: _loadCloudData,
       color: provider.brandColor,
-      backgroundColor: isDark ? const Color(0xFF111726) : Colors.white,
+      backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
         children: [
@@ -504,7 +549,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
               border: Border.all(color: provider.brandColor.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
-                  color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color(0xFF0F172A).withValues(alpha: 0.04),
+                  color: isDark ? Colors.black.withValues(alpha: 0.2) : AppTheme.brandLeafGreen.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -531,7 +576,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                           Text(
                             acc.accountName,
                             style: TextStyle(
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -539,7 +584,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                           Text(
                             acc.emailOrUser,
                             style: TextStyle(
-                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
                               fontSize: 11.5,
                             ),
                           ),
@@ -547,7 +592,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.settings_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), size: 18),
+                      icon: Icon(Icons.settings_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 18),
                       tooltip: 'Manage Account',
                       onPressed: () => _manageAccount(provider),
                     ),
@@ -560,7 +605,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                     Text(
                       '${(acc.usedBytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB used of ${(acc.totalBytes / (1024 * 1024 * 1024)).toInt()} GB',
                       style: TextStyle(
-                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                        color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
                       ),
@@ -577,7 +622,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                   child: LinearProgressIndicator(
                     value: acc.usedPercentage,
                     minHeight: 5,
-                    backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    backgroundColor: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                     color: provider.brandColor,
                   ),
                 ),
@@ -615,7 +660,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
               Text(
                 'Cloud Containers',
                 style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                   fontSize: 14.5,
                   fontWeight: FontWeight.bold,
                 ),
@@ -624,13 +669,13 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0F2FE),
+                  color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${files.length}',
                   style: TextStyle(
-                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                    color: isDark ? AppTheme.brandLeafGreen : AppTheme.brandDeepGreen,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -647,17 +692,17 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
               alignment: Alignment.center,
               child: Column(
                 children: [
-                  Icon(Icons.cloud_off_rounded, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 48),
+                  Icon(Icons.cloud_off_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 48),
                   const SizedBox(height: 12),
                   Text('No cloud files in this vault yet',
                       style: TextStyle(
-                        color: isDark ? Colors.white70 : const Color(0xFF0F172A),
+                        color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       )),
                   const SizedBox(height: 4),
                   Text('Tap "Upload Local .zipr" above to sync your first container',
-                      style: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), fontSize: 12)),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12)),
                 ],
               ),
             )
@@ -671,7 +716,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                   border: Border.all(color: borderCol),
                   boxShadow: [
                     BoxShadow(
-                      color: isDark ? Colors.black.withValues(alpha: 0.15) : const Color(0xFF0F172A).withValues(alpha: 0.03),
+                      color: isDark ? Colors.black.withValues(alpha: 0.15) : AppTheme.brandLeafGreen.withValues(alpha: 0.03),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -683,20 +728,20 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: item.isEncrypted
-                          ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                          ? AppTheme.brandLeafGreen.withValues(alpha: 0.15)
                           : provider.brandColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       item.isEncrypted ? Icons.shield_rounded : Icons.folder_zip_rounded,
-                      color: item.isEncrypted ? const Color(0xFF10B981) : provider.brandColor,
+                      color: item.isEncrypted ? AppTheme.brandLeafGreen : provider.brandColor,
                       size: 24,
                     ),
                   ),
                   title: Text(
                     item.name,
                     style: TextStyle(
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -705,7 +750,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                   ),
                   subtitle: Text(
                     '${item.formattedSize} • ${DateFormat('MMM d, yyyy').format(item.modifiedDate)}',
-                    style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 11.5),
+                    style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 11.5),
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -718,14 +763,14 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                       ),
                       // Download to Device Button
                       IconButton(
-                        icon: const Icon(Icons.file_download_rounded, color: Color(0xFF10B981), size: 20),
+                        icon: const Icon(Icons.file_download_rounded, color: AppTheme.brandLeafGreen, size: 20),
                         tooltip: 'Download to Device Library',
                         onPressed: () => _downloadToDevice(item),
                       ),
                       // Popup Menu
                       PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert_rounded, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 18),
-                        color: isDark ? const Color(0xFF111726) : Colors.white,
+                        icon: Icon(Icons.more_vert_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 18),
+                        color: isDark ? AppTheme.darkSurface : Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(color: borderCol),
@@ -736,9 +781,11 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                           } else if (action == 'download') {
                             _downloadToDevice(item);
                           } else if (action == 'share') {
-                            Share.share(
-                              item.downloadUrl,
-                              subject: 'Cloud Link: ${item.name}',
+                            SharePlus.instance.share(
+                              ShareParams(
+                                text: item.downloadUrl,
+                                subject: 'Cloud Link: ${item.name}',
+                              ),
                             );
                           } else if (action == 'delete') {
                             _deleteCloudItem(item);
@@ -751,7 +798,7 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                               children: [
                                 Icon(Icons.visibility_rounded, size: 16, color: provider.brandColor),
                                 const SizedBox(width: 8),
-                                Text('Read / Stream Feed', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 12.5)),
+                                Text('Read / Stream Feed', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 12.5)),
                               ],
                             ),
                           ),
@@ -759,9 +806,9 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                             value: 'download',
                             child: Row(
                               children: [
-                                const Icon(Icons.download_rounded, size: 16, color: Color(0xFF10B981)),
+                                const Icon(Icons.download_rounded, size: 16, color: AppTheme.brandLeafGreen),
                                 const SizedBox(width: 8),
-                                Text('Download to Device', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 12.5)),
+                                Text('Download to Device', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 12.5)),
                               ],
                             ),
                           ),
@@ -769,9 +816,9 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                             value: 'share',
                             child: Row(
                               children: [
-                                const Icon(Icons.link_rounded, size: 16, color: Color(0xFF818CF8)),
+                                const Icon(Icons.link_rounded, size: 16, color: AppTheme.brandSunYellow),
                                 const SizedBox(width: 8),
-                                Text('Share Cloud Link', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 12.5)),
+                                Text('Share Cloud Link', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 12.5)),
                               ],
                             ),
                           ),
@@ -780,9 +827,9 @@ class _CloudVaultScreenState extends State<CloudVaultScreen>
                             value: 'delete',
                             child: Row(
                               children: [
-                                Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFFEF4444)),
+                                Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.darkError),
                                 SizedBox(width: 8),
-                                Text('Delete from Cloud', style: TextStyle(color: Color(0xFFEF4444), fontSize: 12.5)),
+                                Text('Delete from Cloud', style: TextStyle(color: AppTheme.darkError, fontSize: 12.5)),
                               ],
                             ),
                           ),

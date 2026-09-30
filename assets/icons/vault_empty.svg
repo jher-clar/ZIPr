@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
   <defs>
     <linearGradient id="vaultGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#6366F1" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#A855F7" stop-opacity="0.2"/>
+      <stop offset="0%" stop-color="#7ED957" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#FFDE59" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#2A3B19" stop-opacity="0.3"/>
     </linearGradient>
     <linearGradient id="boxFill" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#1E293B"/>
-      <stop offset="100%" stop-color="#0F172A"/>
+      <stop offset="0%" stop-color="#253519"/>
+      <stop offset="100%" stop-color="#1B2714"/>
     </linearGradient>
     <radialGradient id="ambientCircle" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#7ED957" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#7ED957" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
@@ -19,24 +19,24 @@
   <circle cx="120" cy="120" r="90" fill="url(#ambientCircle)"/>
 
   <!-- Back Card -->
-  <rect x="70" y="45" width="100" height="130" rx="16" fill="#141B2D" stroke="#334155" stroke-width="1.5" transform="rotate(-8 120 110)"/>
+  <rect x="70" y="45" width="100" height="130" rx="16" fill="#1B2714" stroke="#3D522B" stroke-width="1.5" transform="rotate(-8 120 110)"/>
 
   <!-- Middle Card -->
-  <rect x="70" y="45" width="100" height="130" rx="16" fill="#1E293B" stroke="#475569" stroke-width="1.5" transform="rotate(6 120 110)"/>
+  <rect x="70" y="45" width="100" height="130" rx="16" fill="#253519" stroke="#4E6838" stroke-width="1.5" transform="rotate(6 120 110)"/>
 
   <!-- Main Container Vault -->
   <rect x="55" y="60" width="130" height="130" rx="24" fill="url(#boxFill)" stroke="url(#vaultGlow)" stroke-width="2"/>
 
   <!-- Inner Vault Dial / Grid -->
-  <circle cx="120" cy="125" r="32" stroke="#38BDF8" stroke-dasharray="4 4" stroke-width="2" opacity="0.6"/>
-  <circle cx="120" cy="125" r="22" fill="#090D16" stroke="#6366F1" stroke-width="2"/>
+  <circle cx="120" cy="125" r="32" stroke="#7ED957" stroke-dasharray="4 4" stroke-width="2" opacity="0.6"/>
+  <circle cx="120" cy="125" r="22" fill="#141E0F" stroke="#FFDE59" stroke-width="2"/>
 
   <!-- Lock / Keyhole Accent -->
-  <path d="M120 115 C116 115 113 118 113 122 C113 124.5 114.5 126.7 116.5 127.8 L115.5 136 H124.5 L123.5 127.8 C125.5 126.7 127 124.5 127 122 C127 118 124 115 120 115 Z" fill="#38BDF8"/>
+  <path d="M120 115 C116 115 113 118 113 122 C113 124.5 114.5 126.7 116.5 127.8 L115.5 136 H124.5 L123.5 127.8 C125.5 126.7 127 124.5 127 122 C127 118 124 115 120 115 Z" fill="#7ED957"/>
 
   <!-- Sparkling Data Indicators -->
-  <circle cx="75" cy="80" r="3" fill="#38BDF8"/>
-  <circle cx="165" cy="80" r="3" fill="#A855F7"/>
-  <circle cx="165" cy="170" r="3" fill="#38BDF8"/>
-  <circle cx="75" cy="170" r="3" fill="#6366F1"/>
+  <circle cx="75" cy="80" r="3" fill="#7ED957"/>
+  <circle cx="165" cy="80" r="3" fill="#FFDE59"/>
+  <circle cx="165" cy="170" r="3" fill="#7ED957"/>
+  <circle cx="75" cy="170" r="3" fill="#FFDE59"/>
 </svg>

@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <defs>
     <linearGradient id="feedGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38BDF8"/>
-      <stop offset="100%" stop-color="#6366F1"/>
+      <stop offset="0%" stop-color="#7ED957"/>
+      <stop offset="100%" stop-color="#2A3B19"/>
     </linearGradient>
   </defs>
-  <rect x="14" y="8" width="36" height="48" rx="6" fill="#1E293B" fill-opacity="0.5" stroke="url(#feedGrad)" stroke-width="2.5"/>
+  <rect x="14" y="8" width="36" height="48" rx="6" fill="#253519" fill-opacity="0.6" stroke="url(#feedGrad)" stroke-width="2.5"/>
   <!-- Continuous Document lines -->
-  <line x1="22" y1="18" x2="42" y2="18" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="22" y1="18" x2="42" y2="18" stroke="#7ED957" stroke-width="2.5" stroke-linecap="round"/>
   <!-- Image thumbnail rect -->
-  <rect x="22" y="24" width="20" height="14" rx="3" fill="#334155" stroke="#6366F1" stroke-width="1.5"/>
-  <circle cx="27" cy="29" r="2" fill="#38BDF8"/>
-  <path d="M24 36 L30 31 L36 36 L40 33" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round"/>
+  <rect x="22" y="24" width="20" height="14" rx="3" fill="#314322" stroke="#7ED957" stroke-width="1.5"/>
+  <circle cx="27" cy="29" r="2" fill="#7ED957"/>
+  <path d="M24 36 L30 31 L36 36 L40 33" stroke="#C7D6BD" stroke-width="1.5" stroke-linecap="round"/>
   <!-- Text line -->
-  <line x1="22" y1="44" x2="36" y2="44" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="22" y1="44" x2="36" y2="44" stroke="#8DA082" stroke-width="2" stroke-linecap="round"/>
 </svg>

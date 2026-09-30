@@ -53,7 +53,8 @@ class CompressionService {
       );
 
       final maxDim = cfg.photoMaxDimension.maxPixels;
-      final effectiveDim = maxDim > 0 ? maxDim : 2560;
+      // When maxDim is 0 (Source / No Downscaling), use 16384 so FlutterImageCompress never scales down pixels
+      final effectiveDim = maxDim > 0 ? maxDim : 16384;
 
       final compressedXFile = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
@@ -67,7 +68,13 @@ class CompressionService {
 
       if (compressedXFile != null && await File(compressedXFile.path).exists()) {
         final result = File(compressedXFile.path);
-        if (await result.length() > 0) {
+        final compLen = await result.length();
+        final origLen = await file.length();
+        if (compLen > 0) {
+          // HandBrake Size Guard: If compressed file is larger than original, keep original
+          if (cfg.neverExceedOriginalSize && compLen >= origLen) {
+            return file;
+          }
           return result;
         }
       }
@@ -119,7 +126,16 @@ class CompressionService {
       );
 
       if (info != null && info.file != null && await info.file!.exists()) {
-        return info.file!;
+        final result = info.file!;
+        final compLen = await result.length();
+        final origLen = await file.length();
+        if (compLen > 0) {
+          // HandBrake Size Guard: If re-encoded video is larger than original, keep original
+          if (cfg.neverExceedOriginalSize && compLen >= origLen) {
+            return file;
+          }
+          return result;
+        }
       }
     } catch (e) {
       debugPrint('Video transcoding fallback: $e');

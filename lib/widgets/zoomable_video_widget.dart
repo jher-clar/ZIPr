@@ -3,41 +3,62 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../screens/fullscreen_video_player_screen.dart';
+import '../theme/app_theme.dart';
 
-/// Zoomable Video Player Widget with Two-Finger Swipe Zoom, Fullscreen Mode & Interactive Controls
+/// Zoomable Video Player Widget with Social Media In-Feed Autoplay, Single-Mode Player Trigger & Smooth Zooming
 class ZoomableVideoWidget extends StatefulWidget {
   final File videoFile;
   final bool autoPlay;
   final bool isMuted;
+  final bool isFocused;
   final String? title;
+  final VoidCallback? onTapVideo;
+  final ValueChanged<bool>? onZoomChanged;
+  final ValueChanged<int>? onNavigateAdjacent;
 
   const ZoomableVideoWidget({
     super.key,
     required this.videoFile,
     this.autoPlay = false,
-    this.isMuted = false,
+    this.isMuted = true,
+    this.isFocused = true,
     this.title,
+    this.onTapVideo,
+    this.onZoomChanged,
+    this.onNavigateAdjacent,
   });
 
   @override
   State<ZoomableVideoWidget> createState() => _ZoomableVideoWidgetState();
 }
 
-class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
+class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget>
+    with SingleTickerProviderStateMixin {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
   bool _hasError = false;
-  bool _showControls = true;
-  bool _isMuted = false;
+  bool _isMuted = true;
   double _currentScale = 1.0;
-  Timer? _hideTimer;
+  double _edgeDragX = 0.0;
+
   final TransformationController _transformController = TransformationController();
+  late AnimationController _animationController;
+  Animation<Matrix4>? _zoomAnimation;
   TapDownDetails? _doubleTapDetails;
 
   @override
   void initState() {
     super.initState();
     _isMuted = widget.isMuted;
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    )..addListener(() {
+        if (_zoomAnimation != null) {
+          _transformController.value = _zoomAnimation!.value;
+          _currentScale = _zoomAnimation!.value.getMaxScaleOnAxis();
+        }
+      });
     _initVideo();
   }
 
@@ -50,15 +71,11 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
       setState(() {
         _isInitialized = true;
         _controller.setLooping(true);
-        if (_isMuted) {
-          _controller.setVolume(0.0);
-        }
-        if (widget.autoPlay) {
+        _controller.setVolume(_isMuted ? 0.0 : 1.0);
+        if (widget.autoPlay && widget.isFocused) {
           _controller.play();
         }
       });
-
-      _startHideTimer();
     } catch (e) {
       if (mounted) {
         setState(() => _hasError = true);
@@ -66,34 +83,65 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
     }
   }
 
-  void _startHideTimer() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && _controller.value.isPlaying) {
-        setState(() => _showControls = false);
+  @override
+  void didUpdateWidget(ZoomableVideoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isInitialized) {
+      // Social Media In-Feed Autoplay: play when focused in viewport, pause when scrolled away
+      if (widget.isFocused != oldWidget.isFocused) {
+        if (widget.isFocused) {
+          _controller.play();
+        } else {
+          _controller.pause();
+        }
       }
-    });
-  }
-
-  void _toggleControls() {
-    setState(() {
-      _showControls = !_showControls;
-    });
-    if (_showControls) {
-      _startHideTimer();
+      if (widget.isMuted != oldWidget.isMuted) {
+        _isMuted = widget.isMuted;
+        _controller.setVolume(_isMuted ? 0.0 : 1.0);
+      }
     }
   }
 
-  void _togglePlayPause() {
-    setState(() {
-      if (_controller.value.isPlaying) {
-        _controller.pause();
-        _showControls = true;
-      } else {
-        _controller.play();
-        _startHideTimer();
-      }
-    });
+  void _handleDoubleTap() {
+    final currentMatrix = _transformController.value;
+    final currentScale = currentMatrix.getMaxScaleOnAxis();
+
+    final Matrix4 targetMatrix;
+    if (currentScale > 1.2) {
+      targetMatrix = Matrix4.identity();
+      widget.onZoomChanged?.call(false);
+    } else {
+      final pos = _doubleTapDetails?.localPosition ?? Offset.zero;
+      const targetScale = 3.5;
+      targetMatrix = Matrix4.identity()
+        ..translateByDouble(-pos.dx * (targetScale - 1), -pos.dy * (targetScale - 1), 0.0, 1.0)
+        ..scaleByDouble(targetScale, targetScale, 1.0, 1.0);
+      widget.onZoomChanged?.call(true);
+    }
+
+    _zoomAnimation = Matrix4Tween(
+      begin: currentMatrix,
+      end: targetMatrix,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOutCubic,
+    ));
+
+    _animationController.forward(from: 0.0);
+  }
+
+  void _resetZoom() {
+    final currentMatrix = _transformController.value;
+    widget.onZoomChanged?.call(false);
+    _edgeDragX = 0.0;
+    _zoomAnimation = Matrix4Tween(
+      begin: currentMatrix,
+      end: Matrix4.identity(),
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+    _animationController.forward(from: 0.0);
   }
 
   void _toggleMute() {
@@ -103,60 +151,21 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
     });
   }
 
-  void _resetZoom() {
+  void _togglePlayPause() {
     setState(() {
-      _transformController.value = Matrix4.identity();
-      _currentScale = 1.0;
+      if (_controller.value.isPlaying) {
+        _controller.pause();
+      } else {
+        _controller.play();
+      }
     });
   }
 
-  void _handleDoubleTap() {
-    final currentMatrix = _transformController.value;
-    if (currentMatrix != Matrix4.identity()) {
-      _resetZoom();
-    } else {
-      final pos = _doubleTapDetails?.localPosition ?? Offset.zero;
-      final targetScale = 3.5;
-      final matrix = Matrix4.identity()
-        ..translateByDouble(-pos.dx * (targetScale - 1), -pos.dy * (targetScale - 1), 0.0, 1.0)
-        ..scaleByDouble(targetScale, targetScale, 1.0, 1.0);
-      setState(() {
-        _transformController.value = matrix;
-        _currentScale = targetScale;
-      });
-    }
-  }
-
-  void _handleTwoFingerScaleUpdate(ScaleUpdateDetails details) {
-    if (details.pointerCount >= 2) {
-      // Two-finger swipe gesture: swipe up zooms in, swipe down zooms out
-      final swipeFactor = 1.0 - (details.focalPointDelta.dy * 0.008);
-      final stepScale = details.scale * swipeFactor;
-
-      final oldMatrix = _transformController.value;
-      final currentScaleVal = oldMatrix.getMaxScaleOnAxis();
-      final newScaleVal = (currentScaleVal * stepScale).clamp(1.0, 30.0);
-
-      if ((newScaleVal - currentScaleVal).abs() > 0.001) {
-        final focal = details.localFocalPoint;
-        final matrix = Matrix4.identity()
-          ..translateByDouble(
-            focal.dx * (1 - newScaleVal),
-            focal.dy * (1 - newScaleVal),
-            0.0,
-            1.0,
-          )
-          ..scaleByDouble(newScaleVal, newScaleVal, 1.0, 1.0);
-
-        setState(() {
-          _transformController.value = matrix;
-          _currentScale = newScaleVal;
-        });
-      }
-    }
-  }
-
   Future<void> _openFullScreen() async {
+    if (widget.onTapVideo != null) {
+      widget.onTapVideo!();
+      return;
+    }
     if (!_isInitialized) return;
 
     final wasPlaying = _controller.value.isPlaying;
@@ -182,21 +191,15 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
         _isMuted = result.isMuted;
         _controller.setVolume(_isMuted ? 0.0 : 1.0);
       });
-      if (result.isPlaying) {
+      if (result.isPlaying && widget.isFocused) {
         await _controller.play();
       }
     }
   }
 
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
   @override
   void dispose() {
-    _hideTimer?.cancel();
+    _animationController.dispose();
     _controller.dispose();
     _transformController.dispose();
     super.dispose();
@@ -206,20 +209,20 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
   Widget build(BuildContext context) {
     if (_hasError) {
       return Container(
-        color: const Color(0xFF0F1420),
+        color: AppTheme.darkSurface,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 42),
+              const Icon(Icons.error_outline_rounded, color: AppTheme.darkError, size: 40),
               const SizedBox(height: 8),
-              const Text('Could not play video', style: TextStyle(color: Colors.white70)),
+              const Text('Could not play video', style: TextStyle(color: AppTheme.darkTextMuted, fontSize: 13)),
               TextButton(
                 onPressed: () {
                   setState(() => _hasError = false);
                   _initVideo();
                 },
-                child: const Text('Retry', style: TextStyle(color: Color(0xFF38BDF8))),
+                child: const Text('Retry', style: TextStyle(color: AppTheme.brandLeafGreen)),
               ),
             ],
           ),
@@ -229,9 +232,9 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
 
     if (!_isInitialized) {
       return Container(
-        color: const Color(0xFF0F1420),
+        color: Colors.black,
         child: const Center(
-          child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
+          child: CircularProgressIndicator(color: AppTheme.brandLeafGreen),
         ),
       );
     }
@@ -239,23 +242,79 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Two-Finger Swipe Zoomable Video up to 30.0x max capacity
+        // Fluid, conflict-free Zoomable Video up to 30.0x with Single-Tap to Full Mode
         GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: _toggleControls,
+          onTap: _openFullScreen,
           onDoubleTapDown: (d) => _doubleTapDetails = d,
           onDoubleTap: _handleDoubleTap,
-          onScaleUpdate: _handleTwoFingerScaleUpdate,
           child: InteractiveViewer(
             transformationController: _transformController,
             minScale: 1.0,
             maxScale: 30.0,
-            panEnabled: true,
+            panEnabled: _currentScale > 1.05,
             scaleEnabled: true,
-            child: Center(
-              child: AspectRatio(
-                aspectRatio: _controller.value.aspectRatio > 0 ? _controller.value.aspectRatio : 16 / 9,
-                child: VideoPlayer(_controller),
+            clipBehavior: Clip.none,
+            onInteractionStart: (details) {
+              if (details.pointerCount >= 2) {
+                widget.onZoomChanged?.call(true);
+              }
+            },
+            onInteractionUpdate: (details) {
+              final scale = _transformController.value.getMaxScaleOnAxis();
+              if ((scale - _currentScale).abs() > 0.02) {
+                setState(() => _currentScale = scale);
+              }
+              if (scale > 1.05) {
+                widget.onZoomChanged?.call(true);
+
+                // Modern photo gallery edge-slide boundary detection
+                final tx = _transformController.value.getTranslation().x;
+                final screenWidth = MediaQuery.of(context).size.width;
+                final minTx = screenWidth * (1.0 - scale);
+
+                final isAtLeftEdge = tx >= -5.0;
+                final isAtRightEdge = tx <= (minTx + 5.0);
+                final dx = details.focalPointDelta.dx;
+
+                if (isAtRightEdge && dx < -5.0) {
+                  _edgeDragX += dx;
+                  if (_edgeDragX < -45.0) {
+                    _edgeDragX = 0.0;
+                    _resetZoom();
+                    widget.onNavigateAdjacent?.call(1);
+                  }
+                } else if (isAtLeftEdge && dx > 5.0) {
+                  _edgeDragX += dx;
+                  if (_edgeDragX > 45.0) {
+                    _edgeDragX = 0.0;
+                    _resetZoom();
+                    widget.onNavigateAdjacent?.call(-1);
+                  }
+                } else {
+                  _edgeDragX = 0.0;
+                }
+              } else {
+                _edgeDragX = 0.0;
+              }
+            },
+            onInteractionEnd: (details) {
+              _edgeDragX = 0.0;
+              final scale = _transformController.value.getMaxScaleOnAxis();
+              setState(() => _currentScale = scale);
+              if (scale <= 1.05) {
+                widget.onZoomChanged?.call(false);
+              }
+            },
+            child: SizedBox(
+              width: double.infinity,
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio > 0 ? _controller.value.aspectRatio : 16 / 9,
+                  child: RepaintBoundary(
+                    child: VideoPlayer(_controller),
+                  ),
+                ),
               ),
             ),
           ),
@@ -269,9 +328,16 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFF0C101A).withValues(alpha: 0.85),
+                color: AppTheme.darkSurface.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.5)),
+                border: Border.all(color: AppTheme.brandLeafGreen.withValues(alpha: 0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -279,7 +345,7 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
                   Text(
                     '${_currentScale.toStringAsFixed(1)}x Zoom',
                     style: const TextStyle(
-                      color: Color(0xFF38BDF8),
+                      color: AppTheme.brandLeafGreen,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
@@ -294,133 +360,85 @@ class _ZoomableVideoWidgetState extends State<ZoomableVideoWidget> {
             ),
           ),
 
-        // Controls Overlay
-        AnimatedOpacity(
-          opacity: _showControls ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 250),
-          child: IgnorePointer(
-            ignoring: !_showControls,
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.35),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Top Toolbar (Mute, Fullscreen, Reset Zoom)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (_currentScale > 1.05)
-                          IconButton(
-                            icon: const Icon(Icons.zoom_out_map_rounded, color: Color(0xFF38BDF8), size: 20),
-                            tooltip: 'Reset Zoom',
-                            onPressed: _resetZoom,
-                          ),
-                        IconButton(
-                          icon: Icon(_isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: Colors.white, size: 22),
-                          tooltip: _isMuted ? 'Unmute' : 'Mute',
-                          onPressed: _toggleMute,
-                        ),
-                        // Working Full Screen Button
-                        IconButton(
-                          icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF38BDF8), size: 26),
-                          tooltip: 'Full Screen (Portrait & Landscape)',
-                          onPressed: _openFullScreen,
-                        ),
-                      ],
-                    ),
+        // Video Action Overlay (Mute, Single Mode Expand & Play Pause)
+        Positioned(
+          top: 10,
+          right: 10,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Mute / Unmute Button (Instagram / TikTok Reel Style)
+              InkWell(
+                onTap: _toggleMute,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 0.8),
                   ),
-
-                  // Center Play/Pause Button
-                  GestureDetector(
-                    onTap: _togglePlayPause,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0C101A).withValues(alpha: 0.75),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.5), width: 1.5),
+                  child: Icon(
+                    _isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                    color: Colors.white,
+                    size: 17,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Single Mode Video Player Trigger Button
+              InkWell(
+                onTap: _openFullScreen,
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.darkSurface.withValues(alpha: 0.90),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.brandLeafGreen.withValues(alpha: 0.5), width: 0.8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.fullscreen_rounded, color: AppTheme.brandLeafGreen, size: 18),
+                      SizedBox(width: 4),
+                      Text(
+                        'Single Player',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      child: Icon(
-                        _controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                        size: 42,
-                        color: Colors.white,
-                      ),
-                    ),
+                    ],
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
 
-                  // Bottom Progress Bar, Time & Fullscreen Action
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ValueListenableBuilder(
-                          valueListenable: _controller,
-                          builder: (context, VideoPlayerValue val, _) {
-                            final current = val.position;
-                            final total = val.duration;
-                            final progress = total.inMilliseconds > 0
-                                ? current.inMilliseconds / total.inMilliseconds
-                                : 0.0;
-
-                            return Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      _formatDuration(current),
-                                      style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: SliderTheme(
-                                        data: SliderTheme.of(context).copyWith(
-                                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                                          trackHeight: 3,
-                                          activeTrackColor: const Color(0xFF38BDF8),
-                                          inactiveTrackColor: Colors.white24,
-                                          thumbColor: const Color(0xFF38BDF8),
-                                        ),
-                                        child: Slider(
-                                          value: progress.clamp(0.0, 1.0),
-                                          onChanged: (newVal) {
-                                            final targetMs = (newVal * total.inMilliseconds).toInt();
-                                            _controller.seekTo(Duration(milliseconds: targetMs));
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatDuration(total),
-                                      style: const TextStyle(color: Colors.white70, fontSize: 11.5),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    // Bottom Fullscreen trigger icon
-                                    IconButton(
-                                      icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
-                                      tooltip: 'Full Screen Mode',
-                                      onPressed: _openFullScreen,
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        // Floating Play/Pause Indicator if paused while in focus
+        if (!_controller.value.isPlaying && _isInitialized)
+          Positioned(
+            child: InkWell(
+              onTap: _togglePlayPause,
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppTheme.brandLeafGreen.withValues(alpha: 0.6), width: 1.5),
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  size: 32,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

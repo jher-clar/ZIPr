@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/permission_service.dart';
+import '../theme/app_theme.dart';
 
 class PermissionModal extends StatefulWidget {
   final VoidCallback onPermissionsGranted;
@@ -78,9 +79,9 @@ class _PermissionModalState extends State<PermissionModal> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
-    final modalBg = isDark ? const Color(0xFF0C101A) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final primaryColor = AppTheme.primary(context);
+    final modalBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     final mediaOk = _status?.mediaGranted ?? false;
     final cameraOk = _status?.cameraGranted ?? false;
@@ -110,7 +111,7 @@ class _PermissionModalState extends State<PermissionModal> {
               height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -141,7 +142,7 @@ class _PermissionModalState extends State<PermissionModal> {
                     Text(
                       'Permissions Required',
                       style: TextStyle(
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.3,
@@ -151,7 +152,7 @@ class _PermissionModalState extends State<PermissionModal> {
                     Text(
                       'Grant access once to enable container features',
                       style: TextStyle(
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
                         fontSize: 12.5,
                       ),
                     ),
@@ -176,7 +177,7 @@ class _PermissionModalState extends State<PermissionModal> {
           const SizedBox(height: 10),
           _buildPermissionCard(
             icon: Icons.camera_alt_rounded,
-            iconColor: const Color(0xFFA855F7),
+            iconColor: AppTheme.brandSunYellow,
             title: 'Camera Access',
             description: 'To capture photos & record videos directly inside Creation Studio',
             isGranted: cameraOk,
@@ -186,7 +187,7 @@ class _PermissionModalState extends State<PermissionModal> {
           const SizedBox(height: 10),
           _buildPermissionCard(
             icon: Icons.folder_rounded,
-            iconColor: const Color(0xFF10B981),
+            iconColor: AppTheme.brandLeafGreen,
             title: 'Storage & Document Vault',
             description: 'To save, export, and open .zipr containers on your device storage',
             isGranted: storageOk || mediaOk,
@@ -202,7 +203,7 @@ class _PermissionModalState extends State<PermissionModal> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
-                foregroundColor: isDark ? const Color(0xFF080B11) : Colors.white,
+                foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
                 elevation: 4,
                 shadowColor: primaryColor.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -234,7 +235,7 @@ class _PermissionModalState extends State<PermissionModal> {
     required bool isDark,
     required Color borderCol,
   }) {
-    final cardBg = isDark ? const Color(0xFF111726) : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -242,7 +243,7 @@ class _PermissionModalState extends State<PermissionModal> {
         color: cardBg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isGranted ? const Color(0xFF10B981).withValues(alpha: 0.4) : borderCol,
+          color: isGranted ? AppTheme.brandLeafGreen.withValues(alpha: 0.4) : borderCol,
         ),
       ),
       child: Row(
@@ -263,7 +264,7 @@ class _PermissionModalState extends State<PermissionModal> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13.5,
                   ),
@@ -272,7 +273,7 @@ class _PermissionModalState extends State<PermissionModal> {
                 Text(
                   description,
                   style: TextStyle(
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
                     fontSize: 11.5,
                   ),
                 ),
@@ -282,7 +283,7 @@ class _PermissionModalState extends State<PermissionModal> {
           const SizedBox(width: 8),
           Icon(
             isGranted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-            color: isGranted ? const Color(0xFF10B981) : (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1)),
+            color: isGranted ? AppTheme.brandLeafGreen : (isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
             size: 22,
           ),
         ],

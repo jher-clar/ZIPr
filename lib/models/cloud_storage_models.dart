@@ -4,8 +4,8 @@ enum CloudProvider {
   gdrive('Google Drive', 'gdrive', Color(0xFF4285F4), Icons.add_to_drive_rounded, 'Cloud backup & team drive'),
   mega('MEGA.nz', 'mega', Color(0xFFD9272E), Icons.lock_rounded, 'Zero-knowledge encrypted cloud'),
   onedrive('OneDrive / OneCloud', 'onedrive', Color(0xFF0078D4), Icons.cloud_circle_rounded, 'Microsoft cloud vault'),
-  megadrive('MegaDrive / WebDAV', 'megadrive', Color(0xFFA855F7), Icons.dns_rounded, 'Custom self-hosted WebDAV cloud'),
-  directUrl('Direct Cloud Link', 'directUrl', Color(0xFF10B981), Icons.link_rounded, 'Import from any public/shared link');
+  megadrive('MegaDrive / WebDAV', 'megadrive', Color(0xFFFF914D), Icons.dns_rounded, 'Custom self-hosted WebDAV cloud'),
+  directUrl('Direct Cloud Link', 'directUrl', Color(0xFF7ED957), Icons.link_rounded, 'Import from any public/shared link');
 
   final String displayName;
   final String keyName;

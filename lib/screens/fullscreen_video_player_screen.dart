@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:video_player/video_player.dart';
+import '../theme/app_theme.dart';
 
 class FullScreenVideoResult {
   final Duration position;
@@ -37,7 +38,8 @@ class FullScreenVideoPlayerScreen extends StatefulWidget {
   State<FullScreenVideoPlayerScreen> createState() => _FullScreenVideoPlayerScreenState();
 }
 
-class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScreen> {
+class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScreen>
+    with SingleTickerProviderStateMixin {
   late VideoPlayerController _controller;
   bool _isInitialized = false;
   bool _hasError = false;
@@ -49,12 +51,23 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
 
   Timer? _hideTimer;
   final TransformationController _transformController = TransformationController();
+  late AnimationController _zoomAnimationController;
+  Animation<Matrix4>? _zoomAnimation;
   TapDownDetails? _doubleTapDetails;
 
   @override
   void initState() {
     super.initState();
     _isMuted = widget.initialIsMuted;
+
+    _zoomAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    )..addListener(() {
+        if (_zoomAnimation != null) {
+          _transformController.value = _zoomAnimation!.value;
+        }
+      });
 
     // Enable all orientations for full user freedom (Portrait & Landscape)
     SystemChrome.setPreferredOrientations([
@@ -169,55 +182,43 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
   }
 
   void _resetZoom() {
-    setState(() {
-      _transformController.value = Matrix4.identity();
-      _currentScale = 1.0;
-    });
-  }
-
-  void _handleDoubleTap() {
-    final currentMatrix = _transformController.value;
-    if (currentMatrix != Matrix4.identity()) {
-      _resetZoom();
-    } else {
-      final pos = _doubleTapDetails?.localPosition ?? Offset.zero;
-      final targetScale = 4.0;
-      final matrix = Matrix4.identity()
-        ..translateByDouble(-pos.dx * (targetScale - 1), -pos.dy * (targetScale - 1), 0.0, 1.0)
-        ..scaleByDouble(targetScale, targetScale, 1.0, 1.0);
-      setState(() {
-        _transformController.value = matrix;
-        _currentScale = targetScale;
+    if (_transformController.value != Matrix4.identity()) {
+      _zoomAnimation = Matrix4Tween(
+        begin: _transformController.value,
+        end: Matrix4.identity(),
+      ).animate(CurvedAnimation(
+        parent: _zoomAnimationController,
+        curve: Curves.easeOutCubic,
+      ));
+      _zoomAnimationController.forward(from: 0).then((_) {
+        if (mounted) setState(() => _currentScale = 1.0);
       });
+    } else {
+      setState(() => _currentScale = 1.0);
     }
   }
 
-  void _handleTwoFingerScaleUpdate(ScaleUpdateDetails details) {
-    if (details.pointerCount >= 2) {
-      // Combine pinch scale with vertical two-finger swipe zoom delta
-      final swipeFactor = 1.0 - (details.focalPointDelta.dy * 0.008);
-      final stepScale = details.scale * swipeFactor;
+  void _handleDoubleTap() {
+    final currentScale = _transformController.value.getMaxScaleOnAxis();
+    if (currentScale > 1.1) {
+      _resetZoom();
+    } else {
+      final pos = _doubleTapDetails?.localPosition ?? Offset.zero;
+      const targetScale = 3.5;
+      final endMatrix = Matrix4.identity()
+        ..translateByDouble(-pos.dx * (targetScale - 1), -pos.dy * (targetScale - 1), 0.0, 1.0)
+        ..scaleByDouble(targetScale, targetScale, 1.0, 1.0);
 
-      final oldMatrix = _transformController.value;
-      final currentScaleVal = oldMatrix.getMaxScaleOnAxis();
-      final newScaleVal = (currentScaleVal * stepScale).clamp(1.0, 30.0);
-
-      if ((newScaleVal - currentScaleVal).abs() > 0.001) {
-        final focal = details.localFocalPoint;
-        final matrix = Matrix4.identity()
-          ..translateByDouble(
-            focal.dx * (1 - newScaleVal),
-            focal.dy * (1 - newScaleVal),
-            0.0,
-            1.0,
-          )
-          ..scaleByDouble(newScaleVal, newScaleVal, 1.0, 1.0);
-
-        setState(() {
-          _transformController.value = matrix;
-          _currentScale = newScaleVal;
-        });
-      }
+      _zoomAnimation = Matrix4Tween(
+        begin: _transformController.value,
+        end: endMatrix,
+      ).animate(CurvedAnimation(
+        parent: _zoomAnimationController,
+        curve: Curves.easeOutCubic,
+      ));
+      _zoomAnimationController.forward(from: 0).then((_) {
+        if (mounted) setState(() => _currentScale = targetScale);
+      });
     }
   }
 
@@ -239,6 +240,7 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _zoomAnimationController.dispose();
     _controller.dispose();
     _transformController.dispose();
 
@@ -269,7 +271,7 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 48),
+                    const Icon(Icons.error_outline_rounded, color: AppTheme.darkError, size: 48),
                     const SizedBox(height: 12),
                     const Text('Video playback failed', style: TextStyle(color: Colors.white70)),
                     const SizedBox(height: 12),
@@ -282,24 +284,30 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
               )
             : !_isInitialized
                 ? const Center(
-                    child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
+                    child: CircularProgressIndicator(color: AppTheme.brandLeafGreen),
                   )
                 : Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Video with Two-Finger Swipe Zoom & Pan (Max capacity 30x)
+                      // Video with Smooth Pinch Zoom & Pan (Max capacity 30x)
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: _toggleControls,
                         onDoubleTapDown: (d) => _doubleTapDetails = d,
                         onDoubleTap: _handleDoubleTap,
-                        onScaleUpdate: _handleTwoFingerScaleUpdate,
                         child: InteractiveViewer(
                           transformationController: _transformController,
                           minScale: 1.0,
                           maxScale: 30.0,
                           panEnabled: true,
                           scaleEnabled: true,
+                          clipBehavior: Clip.none,
+                          onInteractionUpdate: (details) {
+                            final scale = _transformController.value.getMaxScaleOnAxis();
+                            if ((scale - _currentScale).abs() > 0.05) {
+                              setState(() => _currentScale = scale);
+                            }
+                          },
                           child: Center(
                             child: AspectRatio(
                               aspectRatio: _controller.value.aspectRatio > 0
@@ -321,7 +329,7 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                             decoration: BoxDecoration(
                               color: const Color(0xFF0C101A).withValues(alpha: 0.85),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.5)),
+                              border: Border.all(color: AppTheme.brandLeafGreen.withValues(alpha: 0.5)),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -329,7 +337,7 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                                 Text(
                                   '${_currentScale.toStringAsFixed(1)}x Zoom',
                                   style: const TextStyle(
-                                    color: Color(0xFF38BDF8),
+                                    color: AppTheme.brandLeafGreen,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -385,7 +393,7 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                                             _isManualLandscape
                                                 ? Icons.screen_lock_landscape_rounded
                                                 : Icons.screen_rotation_rounded,
-                                            color: const Color(0xFF38BDF8),
+                                            color: AppTheme.brandLeafGreen,
                                             size: 22,
                                           ),
                                           tooltip: 'Switch Portrait / Landscape View',
@@ -428,7 +436,7 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                                         // Reset Zoom
                                         if (_currentScale > 1.05)
                                           IconButton(
-                                            icon: const Icon(Icons.zoom_out_map_rounded, color: Color(0xFF38BDF8), size: 20),
+                                            icon: const Icon(Icons.zoom_out_map_rounded, color: AppTheme.brandLeafGreen, size: 20),
                                             tooltip: 'Reset Zoom (1.0x)',
                                             onPressed: _resetZoom,
                                           ),
@@ -444,10 +452,10 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF0C101A).withValues(alpha: 0.8),
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.6), width: 2),
+                                        border: Border.all(color: AppTheme.brandLeafGreen.withValues(alpha: 0.6), width: 2),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF38BDF8).withValues(alpha: 0.25),
+                                            color: AppTheme.brandLeafGreen.withValues(alpha: 0.25),
                                             blurRadius: 20,
                                             spreadRadius: 2,
                                           ),
@@ -489,9 +497,9 @@ class _FullScreenVideoPlayerScreenState extends State<FullScreenVideoPlayerScree
                                                       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                                                       overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
                                                       trackHeight: 3.5,
-                                                      activeTrackColor: const Color(0xFF38BDF8),
+                                                      activeTrackColor: AppTheme.brandLeafGreen,
                                                       inactiveTrackColor: Colors.white24,
-                                                      thumbColor: const Color(0xFF38BDF8),
+                                                      thumbColor: AppTheme.brandLeafGreen,
                                                     ),
                                                     child: Slider(
                                                       value: progress.clamp(0.0, 1.0),

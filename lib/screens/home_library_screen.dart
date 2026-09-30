@@ -7,9 +7,11 @@ import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import '../models/zipr_item.dart';
 import '../services/zipr_storage_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/direct_link_import_dialog.dart';
 import '../widgets/password_dialog.dart';
 import '../widgets/permission_modal.dart';
+import '../widgets/storage_manager_modal.dart';
 import '../widgets/theme_selector_modal.dart';
 import '../widgets/upload_to_cloud_modal.dart';
 import 'cloud_vault_screen.dart';
@@ -31,6 +33,8 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
   String _searchQuery = '';
   String _activeFilter = 'all'; // 'all', 'encrypted', 'unencrypted'
   String _sortBy = 'date'; // 'date', 'name', 'size'
+  bool _isOpeningArchive = false;
+  String _openingStatus = 'Opening container...';
 
   @override
   void initState() {
@@ -49,23 +53,33 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
 
   Future<void> _loadArchives() async {
     if (!mounted) return;
-    setState(() => _loading = true);
     try {
       await ZIPrStorageService.requestStoragePermissions();
       final files = await ZIPrStorageService.listZIPrFiles();
 
-      _archiveMetadata.clear();
+      // Immediate load to render existing files in 0ms without waiting
+      _allFiles = files;
+      _applyFilterAndSort();
+      if (mounted) setState(() => _loading = false);
+
+      // Smooth sequential background inspection without disk I/O spikes
+      bool hasNew = false;
       for (final f in files) {
-        try {
-          final info = await ZIPrStorageService.inspectArchive(f);
-          _archiveMetadata[f.path] = info;
-        } catch (e) {
-          debugPrint('Error inspecting ${f.path}: $e');
+        if (!_archiveMetadata.containsKey(f.path)) {
+          try {
+            final info = await ZIPrStorageService.inspectArchive(f);
+            _archiveMetadata[f.path] = info;
+            hasNew = true;
+          } catch (e) {
+            debugPrint('Error inspecting ${f.path}: $e');
+          }
         }
       }
 
-      _allFiles = files;
-      _applyFilterAndSort();
+      if (hasNew && mounted) {
+        _applyFilterAndSort();
+        setState(() {});
+      }
     } catch (e) {
       debugPrint('Error loading archives: $e');
       _allFiles = [];
@@ -121,23 +135,41 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
   }
 
   Future<void> _openFile(File file) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
-        ),
+    final meta = _archiveMetadata[file.path];
+    final bool alreadyKnownEncrypted = meta?['isEncrypted'] == true;
+
+    String? initialPassword;
+    if (alreadyKnownEncrypted) {
+      // Instant prompt without any loading lag or spinner flicker
+      initialPassword = await PasswordDialog.show(
+        context,
+        title: meta?['title'] as String? ?? p.basenameWithoutExtension(file.path),
+        itemCount: meta?['itemCount'] as int? ?? 0,
       );
+      if (initialPassword == null) return; // User cancelled
+    }
 
-      final openResult = await ZIPrStorageService.openZIPrArchive(file);
+    setState(() {
+      _isOpeningArchive = true;
+      _openingStatus = alreadyKnownEncrypted ? 'Decrypting container...' : 'Opening container...';
+    });
 
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
-
+    try {
+      final openResult = await ZIPrStorageService.openZIPrArchive(
+        file,
+        password: initialPassword,
+        onProgress: (pct, msg) {
+          if (mounted) setState(() => _openingStatus = msg);
+        },
+      );
       final requiresPassword = openResult['requiresPassword'] == true;
 
       if (requiresPassword) {
+        setState(() {
+          _isOpeningArchive = false;
+        });
+
+        if (!mounted) return;
         final password = await PasswordDialog.show(
           context,
           title: openResult['title'] as String? ?? p.basenameWithoutExtension(file.path),
@@ -147,59 +179,55 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         if (password == null) return; // user cancelled
 
         if (!mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const Center(
-            child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
-          ),
+        setState(() {
+          _isOpeningArchive = true;
+          _openingStatus = 'Decrypting container...';
+        });
+
+        final decryptedResult = await ZIPrStorageService.openZIPrArchive(
+          file,
+          password: password,
+          onProgress: (pct, msg) {
+            if (mounted) setState(() => _openingStatus = msg);
+          },
         );
 
-        try {
-          final decryptedResult = await ZIPrStorageService.openZIPrArchive(file, password: password);
-          if (!mounted) return;
-          Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
-
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ZIPrFeedViewerScreen(
-                archiveDir: decryptedResult['dir'] as Directory,
-                manifest: decryptedResult['manifestModel'],
-              ),
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ZIPrFeedViewerScreen(
+              archiveDir: decryptedResult['dir'] as Directory,
+              manifest: decryptedResult['manifestModel'],
+              archiveFile: file,
             ),
-          );
-        } catch (e) {
-          if (!mounted) return;
-          Navigator.of(context, rootNavigator: true).pop(); // dismiss loading
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Decryption failed: $e'),
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-          );
-        }
+          ),
+        );
       } else {
+        if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ZIPrFeedViewerScreen(
               archiveDir: openResult['dir'] as Directory,
               manifest: openResult['manifestModel'],
+              archiveFile: file,
             ),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      try {
-        Navigator.of(context, rootNavigator: true).pop();
-      } catch (_) {}
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to open archive: $e'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppTheme.darkError,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOpeningArchive = false;
+        });
+      }
     }
   }
 
@@ -222,7 +250,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Imported "${p.basename(source.path)}"'),
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppTheme.brandLeafGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -232,7 +260,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Import failed: $e'),
-          backgroundColor: const Color(0xFFEF4444),
+          backgroundColor: AppTheme.darkError,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -246,33 +274,33 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF111726) : Colors.white,
+        backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+          side: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
         ),
         title: Text(
           'Delete Archive?',
           style: TextStyle(
-            color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
+            color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
             fontWeight: FontWeight.w700,
           ),
         ),
         content: Text(
           'Are you sure you want to delete "$title"? This action cannot be undone.',
-          style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+          style: TextStyle(color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(
               'Cancel',
-              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+              style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+              backgroundColor: AppTheme.darkError,
               foregroundColor: Colors.white,
               elevation: 0,
             ),
@@ -291,7 +319,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Deleted "$title"'),
-            backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFF475569),
+            backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.brandDeepGreen,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -300,7 +328,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting file: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppTheme.darkError,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -311,28 +339,82 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
+    final primaryColor = AppTheme.primary(context);
     final bg = Theme.of(context).scaffoldBackgroundColor;
 
     return Scaffold(
       backgroundColor: bg,
       appBar: _buildAppBar(isDark, primaryColor),
-      body: RefreshIndicator(
-        onRefresh: _loadArchives,
-        color: primaryColor,
-        backgroundColor: isDark ? const Color(0xFF111726) : Colors.white,
-        child: Column(
-          children: [
-            _buildSearchAndFilters(isDark, primaryColor),
-            Expanded(
-              child: _loading
-                  ? Center(child: CircularProgressIndicator(color: primaryColor))
-                  : _filteredFiles.isEmpty
-                      ? _buildEmptyState(isDark, primaryColor)
-                      : _buildArchiveList(isDark, primaryColor),
+      body: Stack(
+        children: [
+          RefreshIndicator(
+            onRefresh: _loadArchives,
+            color: primaryColor,
+            backgroundColor: isDark ? AppTheme.darkSurface : Colors.white,
+            child: Column(
+              children: [
+                _buildSearchAndFilters(isDark, primaryColor),
+                Expanded(
+                  child: _loading
+                      ? Center(child: CircularProgressIndicator(color: primaryColor))
+                      : _filteredFiles.isEmpty
+                          ? _buildEmptyState(isDark, primaryColor)
+                          : _buildArchiveList(isDark, primaryColor),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (_isOpeningArchive)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.60),
+                child: Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.darkSurfaceElev : Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(
+                        color: AppTheme.brandLeafGreen.withValues(alpha: 0.45),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.40),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: CircularProgressIndicator(
+                            color: AppTheme.brandLeafGreen,
+                            strokeWidth: 3.5,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          _openingStatus,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : AppTheme.lightTextPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
@@ -344,7 +426,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
           }
         },
         backgroundColor: primaryColor,
-        foregroundColor: isDark ? const Color(0xFF080B11) : Colors.white,
+        foregroundColor: isDark ? const Color(0xFF1B2714) : Colors.white,
         icon: const Icon(Icons.add_rounded, size: 22),
         label: const Text(
           'New .zipr',
@@ -361,11 +443,15 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Vector geometric brand mark
-          SvgPicture.asset(
-            'assets/icons/zipr_mark.svg',
-            width: 28,
-            height: 28,
+          // Logo image / brand mark
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 28,
+              height: 28,
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 8),
           RichText(
@@ -374,7 +460,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                 TextSpan(
                   text: 'ZIP',
                   style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? AppTheme.brandIvory : AppTheme.lightTextPrimary,
                     fontSize: 19,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.8,
@@ -383,7 +469,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                 TextSpan(
                   text: 'r',
                   style: TextStyle(
-                    color: primaryColor,
+                    color: isDark ? AppTheme.brandLeafGreen : AppTheme.brandSunsetOrange,
                     fontSize: 19,
                     fontWeight: FontWeight.w900,
                   ),
@@ -395,10 +481,10 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0F2FE),
+              color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
               borderRadius: BorderRadius.circular(5),
               border: Border.all(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFBAE6FD),
+                color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                 width: 0.8,
               ),
             ),
@@ -439,12 +525,12 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         ),
         // Unified More & Sorting Options Menu
         PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert_rounded, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), size: 22),
+          icon: Icon(Icons.more_vert_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 22),
           tooltip: 'More Actions & Sort',
-          color: isDark ? const Color(0xFF111726) : Colors.white,
+          color: isDark ? AppTheme.darkSurface : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+            side: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
           ),
           onSelected: (val) async {
             if (val == 'import_link') {
@@ -452,6 +538,9 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
               if (res == true) _loadArchives();
             } else if (val == 'import_file') {
               _importExternalFile();
+            } else if (val == 'storage_manager') {
+              await StorageManagerModal.show(context);
+              _loadArchives();
             } else if (val.startsWith('sort_')) {
               setState(() {
                 _sortBy = val.replaceFirst('sort_', '');
@@ -466,7 +555,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                 children: [
                   Icon(Icons.file_upload_outlined, size: 18, color: primaryColor),
                   const SizedBox(width: 10),
-                  Text('Import Local .zipr', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13)),
+                  Text('Import Local .zipr', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13)),
                 ],
               ),
             ),
@@ -474,9 +563,19 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
               value: 'import_link',
               child: Row(
                 children: [
-                  const Icon(Icons.link_rounded, size: 18, color: Color(0xFF818CF8)),
+                  Icon(Icons.link_rounded, size: 18, color: AppTheme.brandSunYellow),
                   const SizedBox(width: 10),
-                  Text('Import Direct Cloud Link', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13)),
+                  Text('Import Direct Cloud Link', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'storage_manager',
+              child: Row(
+                children: [
+                  Icon(Icons.pie_chart_rounded, size: 18, color: AppTheme.brandSunYellow),
+                  const SizedBox(width: 10),
+                  Text('Storage & Cache Manager', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13)),
                 ],
               ),
             ),
@@ -503,13 +602,13 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
       value: value,
       child: Row(
         children: [
-          Icon(icon, size: 18, color: isSelected ? primaryColor : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+          Icon(icon, size: 18, color: isSelected ? primaryColor : (isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted)),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? primaryColor : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A)),
+                color: isSelected ? primaryColor : (isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 13,
               ),
@@ -535,8 +634,8 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0C101A) : Colors.white,
-        border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0))),
+        color: isDark ? AppTheme.darkSurface : Colors.white,
+        border: Border(bottom: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder)),
       ),
       child: Column(
         children: [
@@ -548,22 +647,22 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: isDark
-                      ? [const Color(0xFF131D33), const Color(0xFF0F172A)]
-                      : [const Color(0xFFF0F9FF), const Color(0xFFF8FAFC)],
+                      ? [const Color(0xFF2E401F), const Color(0xFF223217)]
+                      : [const Color(0xFFF3EFE4), const Color(0xFFFAF7EE)],
                 ),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFBAE6FD),
+                  color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder,
                 ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildStatItem('Containers', '${_allFiles.length}', Icons.folder_zip_rounded, primaryColor, isDark),
-                  Container(width: 1, height: 24, color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
-                  _buildStatItem('Encrypted', '$totalEncrypted', Icons.shield_rounded, const Color(0xFF10B981), isDark),
-                  Container(width: 1, height: 24, color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
-                  _buildStatItem('Volume', ZIPrItem.formatBytes(totalBytes), Icons.data_usage_rounded, const Color(0xFF818CF8), isDark),
+                  Container(width: 1, height: 24, color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+                  _buildStatItem('Encrypted', '$totalEncrypted', Icons.shield_rounded, AppTheme.brandLeafGreen, isDark),
+                  Container(width: 1, height: 24, color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
+                  _buildStatItem('Volume', ZIPrItem.formatBytes(totalBytes), Icons.data_usage_rounded, isDark ? AppTheme.brandSunYellow : AppTheme.brandSunsetOrange, isDark),
                 ],
               ),
             ),
@@ -572,9 +671,9 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
           Container(
             height: 44,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9),
+              color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
             ),
             child: TextField(
               onChanged: (val) {
@@ -583,15 +682,15 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                   _applyFilterAndSort();
                 });
               },
-              style: TextStyle(fontSize: 14, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+              style: TextStyle(fontSize: 14, color: isDark ? AppTheme.brandIvory : AppTheme.lightTextPrimary),
               decoration: InputDecoration(
                 isDense: true,
                 hintText: 'Search container archives...',
-                hintStyle: TextStyle(color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), fontSize: 13.5),
-                prefixIcon: Icon(Icons.search_rounded, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 20),
+                hintStyle: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 13.5),
+                prefixIcon: Icon(Icons.search_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 20),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear_rounded, size: 18, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                        icon: Icon(Icons.clear_rounded, size: 18, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                         onPressed: () {
                           setState(() {
                             _searchQuery = '';
@@ -638,7 +737,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
             Text(
               value,
               style: TextStyle(
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? AppTheme.brandIvory : AppTheme.lightTextPrimary,
                 fontWeight: FontWeight.w800,
                 fontSize: 12.5,
               ),
@@ -646,7 +745,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
             Text(
               label,
               style: TextStyle(
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                 fontSize: 10.5,
               ),
             ),
@@ -658,10 +757,12 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
 
   Widget _buildFilterPill(String id, String label, bool isDark, Color primaryColor, {IconData? icon}) {
     final active = _activeFilter == id;
-    final activeBg = primaryColor.withValues(alpha: isDark ? 0.15 : 0.12);
-    final inactiveBg = isDark ? const Color(0xFF111726) : const Color(0xFFF1F5F9);
-    final borderColor = active ? primaryColor : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0));
-    final textColor = active ? primaryColor : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
+    final activeBg = isDark
+        ? AppTheme.brandLeafGreen.withValues(alpha: 0.18)
+        : AppTheme.brandDeepGreen.withValues(alpha: 0.12);
+    final inactiveBg = isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev;
+    final borderColor = active ? primaryColor : (isDark ? AppTheme.darkBorder : AppTheme.lightBorder);
+    final textColor = active ? primaryColor : (isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary);
 
     return GestureDetector(
       onTap: () {
@@ -726,8 +827,8 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
     final formattedDate = DateFormat('MMM dd, yyyy • HH:mm').format(modified);
     final sizeStr = ZIPrItem.formatBytes(file.existsSync() ? file.lengthSync() : 0);
 
-    final cardBg = isDark ? const Color(0xFF0F172A) : Colors.white;
-    final borderCol = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -737,7 +838,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         border: Border.all(color: borderCol),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF0F172A).withValues(alpha: 0.04),
+            color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF2A3B19).withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -760,19 +861,29 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                   height: 48,
                   decoration: BoxDecoration(
                     color: isEncrypted
-                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                        : primaryColor.withValues(alpha: 0.12),
+                        ? AppTheme.brandLeafGreen.withValues(alpha: 0.15)
+                        : (isDark ? AppTheme.brandLeafGreen.withValues(alpha: 0.12) : AppTheme.brandDeepGreen.withValues(alpha: 0.10)),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isEncrypted
-                          ? const Color(0xFF10B981).withValues(alpha: 0.3)
-                          : primaryColor.withValues(alpha: 0.3),
+                          ? AppTheme.brandLeafGreen.withValues(alpha: 0.4)
+                          : (isDark ? AppTheme.brandLeafGreen.withValues(alpha: 0.35) : AppTheme.brandDeepGreen.withValues(alpha: 0.25)),
                     ),
                   ),
                   child: Center(
                     child: isEncrypted
-                        ? SvgPicture.asset('assets/icons/shield_lock.svg', width: 24, height: 24)
-                        : SvgPicture.asset('assets/icons/document_feed.svg', width: 24, height: 24),
+                        ? SvgPicture.asset(
+                            'assets/icons/shield_lock.svg',
+                            width: 24,
+                            height: 24,
+                            colorFilter: const ColorFilter.mode(AppTheme.brandLeafGreen, BlendMode.srcIn),
+                          )
+                        : SvgPicture.asset(
+                            'assets/icons/document_feed.svg',
+                            width: 24,
+                            height: 24,
+                            colorFilter: ColorFilter.mode(primaryColor, BlendMode.srcIn),
+                          ),
                   ),
                 ),
 
@@ -788,7 +899,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                          color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                           fontSize: 15.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
@@ -814,7 +925,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                       Text(
                         formattedDate,
                         style: TextStyle(
-                          color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                          color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                         ),
@@ -825,11 +936,11 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
 
                 // Action Menu
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert_rounded, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8), size: 20),
-                  color: isDark ? const Color(0xFF111726) : Colors.white,
+                  icon: Icon(Icons.more_vert_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, size: 20),
+                  color: isDark ? AppTheme.darkSurface : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                    side: BorderSide(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder),
                   ),
                   onSelected: (action) {
                     if (action == 'open') {
@@ -837,9 +948,11 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                     } else if (action == 'upload_cloud') {
                       UploadToCloudModal.show(context, file);
                     } else if (action == 'share') {
-                      Share.shareXFiles(
-                        [XFile(file.path)],
-                        text: 'Sharing ZIPr container: $title',
+                      SharePlus.instance.share(
+                        ShareParams(
+                          files: [XFile(file.path)],
+                          text: 'Sharing ZIPr container: $title',
+                        ),
                       );
                     } else if (action == 'delete') {
                       _deleteArchive(file);
@@ -852,7 +965,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                         children: [
                           Icon(Icons.visibility_outlined, size: 18, color: primaryColor),
                           const SizedBox(width: 10),
-                          Text('Open Feed', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13.5)),
+                          Text('Open Feed', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5)),
                         ],
                       ),
                     ),
@@ -862,7 +975,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                         children: [
                           Icon(Icons.cloud_upload_outlined, size: 18, color: primaryColor),
                           const SizedBox(width: 10),
-                          Text('Upload to Cloud', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13.5)),
+                          Text('Upload to Cloud', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5)),
                         ],
                       ),
                     ),
@@ -870,9 +983,9 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                       value: 'share',
                       child: Row(
                         children: [
-                          const Icon(Icons.share_outlined, size: 18, color: Color(0xFF818CF8)),
+                          const Icon(Icons.share_outlined, size: 18, color: AppTheme.brandSunYellow),
                           const SizedBox(width: 10),
-                          Text('Share .zipr', style: TextStyle(color: isDark ? Colors.white : const Color(0xFF0F172A), fontSize: 13.5)),
+                          Text('Share .zipr', style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5)),
                         ],
                       ),
                     ),
@@ -881,9 +994,9 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline_rounded, size: 18, color: Color(0xFFEF4444)),
+                          const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.darkError),
                           SizedBox(width: 10),
-                          Text('Delete', style: TextStyle(color: Color(0xFFEF4444), fontSize: 13.5)),
+                          const Text('Delete', style: TextStyle(color: AppTheme.darkError, fontSize: 13.5)),
                         ],
                       ),
                     ),
@@ -901,19 +1014,19 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0B101D) : const Color(0xFFF1F5F9),
+        color: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0), width: 0.8),
+        border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.lightBorder, width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+          Icon(icon, size: 11, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -930,23 +1043,16 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF111726) : const Color(0xFFF0F9FF),
-                shape: BoxShape.circle,
-                border: Border.all(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFBAE6FD)),
-              ),
-              child: Center(
-                child: Icon(Icons.inventory_2_outlined, size: 40, color: isDark ? const Color(0xFF64748B) : primaryColor),
-              ),
+            SvgPicture.asset(
+              'assets/icons/vault_empty.svg',
+              width: 96,
+              height: 96,
             ),
             const SizedBox(height: 20),
             Text(
               _searchQuery.isNotEmpty ? 'No Matching Archives' : 'No .zipr Containers Found',
               style: TextStyle(
-                color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A),
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
               ),
@@ -958,7 +1064,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
                   : 'Combine photos & videos with HandBrake compression into an ultra-fast continuous feed container.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
                 fontSize: 13.5,
                 height: 1.4,
               ),
@@ -967,7 +1073,7 @@ class _HomeLibraryScreenState extends State<HomeLibraryScreen> {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
-                foregroundColor: isDark ? const Color(0xFF080B11) : Colors.white,
+                foregroundColor: isDark ? AppTheme.darkBg : Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),

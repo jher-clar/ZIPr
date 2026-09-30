@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import '../models/cloud_storage_models.dart';
 import '../services/cloud_storage_service.dart';
+import '../theme/app_theme.dart';
 
 class UploadToCloudModal extends StatefulWidget {
   final File file;
@@ -69,7 +70,7 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppTheme.brandLeafGreen,
             content: Row(
               children: [
                 Icon(_selectedProvider.icon, color: Colors.white, size: 18),
@@ -90,7 +91,7 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Upload failed: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppTheme.darkError,
           ),
         );
       }
@@ -100,12 +101,15 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
   @override
   Widget build(BuildContext context) {
     final fileName = p.basename(widget.file.path);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final modalBg = isDark ? AppTheme.darkSurface : Colors.white;
+    final borderCol = isDark ? AppTheme.darkBorder : AppTheme.lightBorder;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF0C101A),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: Color(0xFF1E293B))),
+      decoration: BoxDecoration(
+        color: modalBg,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: borderCol)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
       child: SafeArea(
@@ -119,7 +123,7 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF334155),
+                  color: isDark ? AppTheme.darkBorderLight : AppTheme.lightBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -129,23 +133,23 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                    color: AppTheme.brandLeafGreen.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.cloud_upload_rounded, color: Color(0xFF38BDF8), size: 22),
+                  child: const Icon(Icons.cloud_upload_rounded, color: AppTheme.brandLeafGreen, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Upload to Cloud Vault',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         fileName,
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                        style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -154,12 +158,12 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
                 ),
                 if (!_isUploading)
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8)),
+                    icon: Icon(Icons.close_rounded, color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
               ],
             ),
-            const Divider(color: Color(0xFF1E293B), height: 24),
+            Divider(color: borderCol, height: 24),
 
             if (_isUploading) ...[
               Padding(
@@ -176,28 +180,28 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
                             value: _progress > 0 ? _progress : null,
                             strokeWidth: 5,
                             color: _selectedProvider.brandColor,
-                            backgroundColor: const Color(0xFF1E293B),
+                            backgroundColor: isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev,
                           ),
                         ),
                         Text(
                           '${(_progress * 100).toInt()}%',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Text(
                       _status,
-                      style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontSize: 13.5, fontWeight: FontWeight.w600),
                       textAlign: TextAlign.center,
                     ),
                   ],
                 ),
               ),
             ] else ...[
-              const Text(
+              Text(
                 'Select Destination Cloud Service',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5, fontWeight: FontWeight.w600),
+                style: TextStyle(color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary, fontSize: 12.5, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
 
@@ -217,10 +221,12 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: isSelected ? prov.brandColor.withValues(alpha: 0.15) : const Color(0xFF111726),
+                    color: isSelected
+                        ? prov.brandColor.withValues(alpha: 0.15)
+                        : (isDark ? AppTheme.darkSurfaceElev : AppTheme.lightSurfaceElev),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isSelected ? prov.brandColor : const Color(0xFF1E293B),
+                      color: isSelected ? prov.brandColor : borderCol,
                       width: isSelected ? 1.5 : 1.0,
                     ),
                   ),
@@ -237,11 +243,11 @@ class _UploadToCloudModalState extends State<UploadToCloudModal> {
                     ),
                     title: Text(
                       prov.displayName,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextPrimary : AppTheme.lightTextPrimary, fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     subtitle: Text(
                       acc.emailOrUser,
-                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                      style: TextStyle(color: isDark ? AppTheme.darkTextMuted : AppTheme.lightTextMuted, fontSize: 12),
                     ),
                     trailing: isSelected
                         ? Icon(Icons.check_circle_rounded, color: prov.brandColor, size: 20)

@@ -2,11 +2,14 @@ import 'package:video_compress/video_compress.dart';
 
 enum HandBrakePreset {
   originalLossless,
+  maxEfficiencyLossless,
   fast1080p30,
   hq4kHevc,
+  superHq1080p,
   universalMobile720p,
   compactSmall,
   webOptimized,
+  productionStandard,
   custom,
 }
 
@@ -121,6 +124,7 @@ class CompressionSettings {
   ImageMaxDimension photoMaxDimension;
   bool keepExif;
   bool generateThumbnails;
+  bool neverExceedOriginalSize;
 
   CompressionSettings({
     this.preset = HandBrakePreset.originalLossless,
@@ -136,6 +140,7 @@ class CompressionSettings {
     this.photoMaxDimension = ImageMaxDimension.source,
     this.keepExif = true,
     this.generateThumbnails = true,
+    this.neverExceedOriginalSize = true,
     bool isOriginalQuality = true,
   }) {
     if (!isOriginalQuality && preset == HandBrakePreset.originalLossless) {
@@ -193,6 +198,24 @@ class CompressionSettings {
         photoQuality = 100;
         photoMaxDimension = ImageMaxDimension.source;
         keepExif = true;
+        generateThumbnails = false;
+        neverExceedOriginalSize = true;
+        break;
+
+      case HandBrakePreset.maxEfficiencyLossless:
+        videoContainer = VideoContainerFormat.mp4;
+        videoCodec = VideoCodecOption.h265; // H.265 / HEVC: 50% higher compression efficiency over H.264
+        videoResolution = VideoResolutionLimit.source; // Same as Source: 0 pixel loss, keeps full 8K / 4K original resolution
+        frameRate = FrameRateLimit.source; // Same as Source: full native framerate, no dropped frames
+        qualityRf = 18; // Visually lossless / reference broadcast CRF
+        encoderSpeed = EncoderSpeedPreset.slow; // Slow: maximum compression density per bit (deep motion analysis & RDO)
+        audioCodec = AudioCodecOption.aac192; // Transparent 192k AAC stereo
+        imageFormat = ImageFormatOption.webp; // Google WebP: modern predictive encoding, 30-50% smaller than JPEG/PNG without dropping quality
+        photoQuality = 95; // Visually lossless / pixel-perfect WebP quality
+        photoMaxDimension = ImageMaxDimension.source; // Zero pixel downscaling: 100% full original resolution preserved (8K/4K/RAW)
+        keepExif = true; // Full camera EXIF metadata and color profile preserved
+        generateThumbnails = false; // Do not bloat archive with extra thumbnail files
+        neverExceedOriginalSize = true; // Anti-inflation Size Guard: guarantees converted files are smaller; if not, keeps original
         break;
 
       case HandBrakePreset.fast1080p30:
@@ -207,6 +230,7 @@ class CompressionSettings {
         photoQuality = 85;
         photoMaxDimension = ImageMaxDimension.res1080p;
         keepExif = true;
+        neverExceedOriginalSize = true;
         break;
 
       case HandBrakePreset.hq4kHevc:
@@ -221,6 +245,22 @@ class CompressionSettings {
         photoQuality = 95;
         photoMaxDimension = ImageMaxDimension.res4k;
         keepExif = true;
+        neverExceedOriginalSize = true;
+        break;
+
+      case HandBrakePreset.superHq1080p:
+        videoContainer = VideoContainerFormat.mp4;
+        videoCodec = VideoCodecOption.h265;
+        videoResolution = VideoResolutionLimit.res1080p;
+        frameRate = FrameRateLimit.source;
+        qualityRf = 20;
+        encoderSpeed = EncoderSpeedPreset.slow;
+        audioCodec = AudioCodecOption.aac320;
+        imageFormat = ImageFormatOption.webp;
+        photoQuality = 92;
+        photoMaxDimension = ImageMaxDimension.res1080p;
+        keepExif = true;
+        neverExceedOriginalSize = true;
         break;
 
       case HandBrakePreset.universalMobile720p:
@@ -235,6 +275,7 @@ class CompressionSettings {
         photoQuality = 80;
         photoMaxDimension = ImageMaxDimension.res720p;
         keepExif = true;
+        neverExceedOriginalSize = true;
         break;
 
       case HandBrakePreset.compactSmall:
@@ -249,6 +290,7 @@ class CompressionSettings {
         photoQuality = 65;
         photoMaxDimension = ImageMaxDimension.res720p;
         keepExif = false;
+        neverExceedOriginalSize = true;
         break;
 
       case HandBrakePreset.webOptimized:
@@ -263,6 +305,22 @@ class CompressionSettings {
         photoQuality = 85;
         photoMaxDimension = ImageMaxDimension.res1080p;
         keepExif = true;
+        neverExceedOriginalSize = true;
+        break;
+
+      case HandBrakePreset.productionStandard:
+        videoContainer = VideoContainerFormat.mov;
+        videoCodec = VideoCodecOption.h264;
+        videoResolution = VideoResolutionLimit.source;
+        frameRate = FrameRateLimit.source;
+        qualityRf = 16;
+        encoderSpeed = EncoderSpeedPreset.medium;
+        audioCodec = AudioCodecOption.aac320;
+        imageFormat = ImageFormatOption.png;
+        photoQuality = 100;
+        photoMaxDimension = ImageMaxDimension.source;
+        keepExif = true;
+        neverExceedOriginalSize = true;
         break;
 
       case HandBrakePreset.custom:
@@ -274,6 +332,9 @@ class CompressionSettings {
   String get summaryText {
     if (isOriginalQuality) {
       return 'Original Master (Lossless • 0 Pixel Loss)';
+    }
+    if (preset == HandBrakePreset.maxEfficiencyLossless) {
+      return 'Max Efficiency Lossless (H.265 • WebP 95% • 0 Pixel Loss)';
     }
     return '${preset.name.toUpperCase()} • ${videoResolution.label.split(' ').first} • ${videoCodec.label.split(' ').first} • RF $qualityRf • ${imageFormat.label.split(' ').first} ($photoQuality%)';
   }
@@ -293,6 +354,7 @@ class CompressionSettings {
       photoMaxDimension: photoMaxDimension,
       keepExif: keepExif,
       generateThumbnails: generateThumbnails,
+      neverExceedOriginalSize: neverExceedOriginalSize,
     );
   }
 }
